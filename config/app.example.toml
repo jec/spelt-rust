@@ -1,0 +1,13 @@
+# Copy this file to app.toml and update values as appropriate.
+
+[server]
+base_url = "https://chat.spelt.io"
+identity_server = "https://id.spelt.io"
+
+[jwt]
+issuer = "https://chat.spelt.io"
+
+[database]
+url = "bolt://hostname:7687"
+username = "neo4j"
+password = "my_secret"
