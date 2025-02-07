@@ -52,8 +52,8 @@ This checklist tracks the progress of implementing the endpoints defined in the
 client-server spec.
 
 - [ ] 3 Server discovery
-    - [ ] `GET /.well-known/matrix/client`
-    - [ ] `GET /_matrix/client/versions`
+    - [x] `GET /.well-known/matrix/client`
+    - [x] `GET /_matrix/client/versions`
     - [ ] `GET /.well-known/matrix/support`
 - [ ] 4 Client authentication
     - [ ] `GET /_matrix/client/v1/register/m.login.registration_token/validity`
