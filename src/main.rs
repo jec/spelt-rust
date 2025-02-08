@@ -3,10 +3,10 @@ use actix_web::{web, App, HttpServer};
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 
-// mod error;
 mod cli;
-mod routes;
 mod config;
+mod error;
+mod routes;
 
 struct AppState {
     config: config::Config,
@@ -14,7 +14,7 @@ struct AppState {
 }
 
 #[actix_web::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), error::Error> {
     let args = cli::parse();
     let conf = config::load(PathBuf::from(args.config_file))?;
     // Make copies of these to use in the bind() call.
@@ -23,7 +23,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(&conf.database.dev_uri.as_ref().unwrap()).await?;
+        .connect(&conf.database.dev_uri.as_ref().expect("Value not found for config key: database.dev_uri"))
+        .await?;
 
     HttpServer::new(move || {
         App::new()
