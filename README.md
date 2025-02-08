@@ -24,7 +24,7 @@ the relevant components of the specification:
 
 Spelt is implemented in [Rust](https://www.rust-lang.org/) using
 [Actix](https://actix.rs/) as the web app framework and
-[Neo4j](https://neo4j.com/) as the database.
+[PostgreSQL](https://postgresql.org/) as the database.
 
 ## Setup
 

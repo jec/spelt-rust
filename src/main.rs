@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use actix_web::{web, App, HttpServer};
-use neo4rs::{query, Graph};
+use sqlx::{Pool, Postgres};
+use sqlx::postgres::PgPoolOptions;
 
 // mod error;
 mod cli;
@@ -9,7 +10,7 @@ mod config;
 
 struct AppState {
     config: config::Config,
-    graph: Graph,
+    db_pool: Option<Pool<Postgres>>,
 }
 
 #[actix_web::main]
@@ -20,19 +21,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bind_address = conf.server.bind_address.clone();
     let port = conf.server.port;
 
-    let graph = Graph::new(
-        &conf.database.uri,
-        &conf.database.username,
-        &conf.database.password
-    ).await.unwrap();
-
-    assert!(graph.run(query("RETURN 1")).await.is_ok());
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&conf.database.dev_uri.as_ref().unwrap()).await?;
 
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
                 config: conf.clone(),
-                graph: graph.clone(),
+                db_pool: Some(pool.clone()),
             }))
             .service(routes::info::versions)
             .service(routes::info::server_names)

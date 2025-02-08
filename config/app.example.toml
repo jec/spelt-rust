@@ -10,6 +10,5 @@ port = 8080
 issuer = "https://chat.spelt.io"
 
 [database]
-url = "bolt://hostname:7687"
-username = "neo4j"
-password = "my_secret"
+dev_uri = "postgres://dev_user:password@localhost/dev"
+test_uri = "postgres://test_user:password@localhost/test"
