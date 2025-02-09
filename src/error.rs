@@ -1,4 +1,6 @@
-use actix_web::{HttpResponse, ResponseError};
+use actix_web::{web, HttpResponse, ResponseError};
+use actix_web::http::StatusCode;
+use serde::Serialize;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -11,11 +13,27 @@ pub enum Error {
     Io(String),
 }
 
+#[derive(Serialize)]
+pub struct ErrorResponse {
+    errcode: String,
+    error: String,
+}
+
 impl ResponseError for Error {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            Error::Config(_) | Error::Db(_) | Error::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
     fn error_response(&self) -> HttpResponse {
         match self {
             Error::Config(e) | Error::Db(e) | Error::Io(e) =>
-                HttpResponse::InternalServerError().body(e.to_string()),
+                HttpResponse::build(self.status_code())
+                    .json(web::Json(ErrorResponse {
+                        errcode: String::from("M_UNKNOWN"),
+                        error: e.to_string()
+                    })),
         }
     }
 }

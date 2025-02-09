@@ -7,6 +7,7 @@ mod cli;
 mod config;
 mod error;
 mod routes;
+mod services;
 
 struct AppState {
     config: config::Config,

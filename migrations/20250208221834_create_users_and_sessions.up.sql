@@ -8,7 +8,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE sessions (
-    id                BIGINT GENERATED ALWAYS AS IDENTITY,
+    id                BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     uuid              uuid                     NOT NULL UNIQUE DEFAULT gen_random_uuid(),
     device_identifier VARCHAR(256)             NOT NULL UNIQUE,
     device_name       VARCHAR(256),
