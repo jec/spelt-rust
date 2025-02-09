@@ -34,10 +34,29 @@ async fn main() -> Result<(), error::Error> {
             }))
             .service(routes::info::versions)
             .service(routes::info::server_names)
+            .service(routes::auth::check_validity)
+            .service(routes::auth::login_types)
     })
         .bind((bind_address, port))?
         .run()
         .await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use sqlx::PgPool;
+
+    /// Proof of concept to be used elsewhere
+    #[sqlx::test]
+    async fn test_db_pool(pool: PgPool) -> sqlx::Result<()> {
+        let foo = sqlx::query("SELECT version() as version")
+            .fetch_one(&pool)
+            .await?;
+
+        println!("{:#?}", foo);
+
+        Ok(())
+    }
 }

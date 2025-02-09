@@ -28,14 +28,13 @@ Spelt is implemented in [Rust](https://www.rust-lang.org/) using
 
 ## Setup
 
-In each of `src/main/resources/` and `src/test/resources/`:
-
-- Generate a keystore with an RSA private key.
-
-      openssl genpkey -outform der -algorithm rsa -out pkey.der
-      openssl pkcs8 -topk8 -inform der -outform der -in pkey.der -out pkey.pk8 -nocrypt
-
-- Copy `application.example.conf` to `application.conf` and update as needed.
+1. Create PostgreSQL development database and user. Below are examples. (Don't
+   use SUPERUSER for the production database.)
+    - `create database spelt_dev;`
+    - `create role spelt_app superuser password 'my-secret';`
+    - `grant all on database spelt_dev to spelt_app;`
+2. Copy `config/app.example.toml` to `config/app.toml` and update values as
+   appropriate.
 
 ## License
 
@@ -56,8 +55,8 @@ client-server spec.
     - [x] `GET /_matrix/client/versions`
     - [ ] `GET /.well-known/matrix/support`
 - [ ] 4 Client authentication
-    - [ ] `GET /_matrix/client/v1/register/m.login.registration_token/validity`
-    - [ ] `GET /_matrix/client/v3/login`
+    - [x] `GET /_matrix/client/v1/register/m.login.registration_token/validity`
+    - [x] `GET /_matrix/client/v3/login`
     - [ ] `POST /_matrix/client/v3/login`
     - [ ] `POST /_matrix/client/v1/login/get_token`
     - [ ] `POST /_matrix/client/v3/refresh`
