@@ -74,14 +74,14 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db_pool: &PgPool) ->
     };
 
     // Create Session and JWT
-    let session_uuid = crate::repo::auth::create_session(
+    let session = crate::repo::auth::create_session(
         user_id,
         &device_id,
-        &login_request.initial_device_display_name.as_ref().unwrap(),
+        &login_request.initial_device_display_name,
         db_pool
     ).await?;
 
-    let access_token = services::jwt::create_jwt(&session_uuid)?;
+    let access_token = services::jwt::create_jwt(&session.uuid.to_string())?;
 
     Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms: services::jwt::JWT_TTL_SECONDS })
 }

@@ -4,6 +4,27 @@ use uuid::Uuid;
 use crate::error::Error;
 
 #[derive(Debug, sqlx::FromRow)]
+pub struct User {
+    pub id: i64,
+    pub name: String,
+    pub email: String,
+    pub encrypted_password: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct Session {
+    pub id: i64,
+    pub uuid: Uuid,
+    pub device_identifier: String,
+    pub device_name: Option<String>,
+    pub user_id: i64,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
 struct ValidationRow {
     id: i64,
     encrypted_password: String,
@@ -42,17 +63,18 @@ pub async fn invalidate_existing_sessions(user_id: i64, device_id: &String, pool
 }
 
 /// Creates a session and returns `Ok(uuid)`
-pub async fn create_session(user_id: i64, device_id: &String, device_name: &String, pool: &PgPool) -> Result<String, Error> {
-    let uuid = Uuid::new_v4().to_string();
-    sqlx::query("INSERT INTO sessions (uuid, device_identifier, device_name, user_id) VALUES ($1, $2, $3, $4)")
-        .bind(&uuid)
-        .bind(&device_id)
-        .bind(&device_name)
-        .bind(user_id)
-        .execute(pool)
-        .await?;
-
-    Ok(uuid)
+pub async fn create_session(user_id: i64, device_id: &String, device_name: &Option<String>, pool: &PgPool) -> Result<Session, Error> {
+    Ok(
+        sqlx::query_as::<_, Session>("\
+                INSERT INTO sessions (device_identifier, device_name, user_id) \
+                VALUES ($1, $2, $3)\
+                RETURNING id, uuid, device_identifier, device_name, user_id, created_at, updated_at")
+            .bind(&device_id)
+            .bind(&device_name)
+            .bind(user_id)
+            .fetch_one(pool)
+            .await?
+    )
 }
 
 /// Validates the JWT signature and looks up the referenced Session; returns
@@ -63,31 +85,19 @@ pub async fn validate_session() -> Result<String, Error> {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use argon2::password_hash::rand_core::OsRng;
     use argon2::password_hash::{Salt, SaltString};
     use argon2::PasswordHasher;
+    use faker_rand::en_us::internet::Domain;
+    use faker_rand::en_us::names::FirstName;
+    use rand::Rng;
     use super::*;
 
     #[sqlx::test]
     async fn test_validate_user_and_password(pool: PgPool) {
-        let username = String::from("foobar");
-        let email = String::from("foobar@example.com");
-        let password = String::from("bazbar");
-        let salt_string = SaltString::generate(&mut OsRng);
-        let salt: Salt = salt_string.as_ref().try_into().unwrap();
-        let argon2 = Argon2::default();
-        let hash = argon2.hash_password(password.as_bytes(), salt).unwrap();
-
-        let row = sqlx::query_as::<_, ValidationRow>("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3) RETURNING id, encrypted_password")
-            .bind(&username)
-            .bind(&email)
-            .bind(hash.to_string())
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-
-        assert_eq!(validate_user_and_password(&username, &password, &pool).await.unwrap(), Some(row.id));
+        let (user, password) = create_test_user(&pool).await;
+        assert_eq!(validate_user_and_password(&user.name, &password, &pool).await.unwrap(), Some(user.id));
     }
 
     #[sqlx::test]
@@ -100,23 +110,88 @@ mod tests {
 
     #[sqlx::test]
     async fn test_validate_user_and_password_with_mismatch(pool: PgPool) {
-        let username = String::from("foobar");
-        let email = String::from("foobar@example.com");
-        let password = String::from("bazbar");
-        let actual_password = String::from("fizzbuzz");
+        let (user, _password) = create_test_user(&pool).await;
+        let not_the_password = String::from("foobar");
+        assert!(validate_user_and_password(&user.name, &not_the_password, &pool).await.unwrap().is_none());
+    }
+
+    #[sqlx::test]
+    async fn test_invalidate_existing_sessions(pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let session = create_test_session(user.id, &pool).await;
+
+        assert_eq!(count_sessions(&pool).await, 1);
+
+        invalidate_existing_sessions(user.id, &session.device_identifier, &pool).await.unwrap();
+
+        assert_eq!(count_sessions(&pool).await, 0);
+    }
+
+    #[sqlx::test]
+    async fn test_invalidate_existing_sessions_with_other_user(pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let session = create_test_session(user.id, &pool).await;
+
+        invalidate_existing_sessions(user.id + 1, &session.device_identifier, &pool).await.unwrap();
+
+        assert_eq!(count_sessions(&pool).await, 1);
+    }
+
+    #[sqlx::test]
+    async fn test_create_session (pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let device_id = Uuid::new_v4().to_string();
+        let session = create_session(user.id, &device_id, &None, &pool).await.unwrap();
+
+        assert!(session.id > 0);
+    }
+
+    pub async fn create_test_user(pool: &PgPool) -> (User, String) {
+        let mut rng = rand::thread_rng();
+        let argon2 = Argon2::default();
+
+        let username = rng.gen::<FirstName>().to_string();
+        let email = format!("{}@{}", rng.gen::<FirstName>().to_string(), rng.gen::<Domain>().to_string());
+        let password = Uuid::new_v4().to_string();
         let salt_string = SaltString::generate(&mut OsRng);
         let salt: Salt = salt_string.as_ref().try_into().unwrap();
-        let argon2 = Argon2::default();
-        let hash = argon2.hash_password(actual_password.as_bytes(), salt).unwrap();
+        let hash = argon2.hash_password(password.as_bytes(), salt).unwrap();
 
-        sqlx::query("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3)")
-            .bind(&username)
-            .bind(&email)
-            .bind(hash.to_string())
-            .execute(&pool)
+        (
+            sqlx::query_as::<_, User>("\
+                    INSERT INTO users (name, email, encrypted_password) \
+                    VALUES ($1, $2, $3) \
+                    RETURNING id, name, email, encrypted_password, created_at, updated_at")
+                .bind(&username)
+                .bind(&email)
+                .bind(hash.to_string())
+                .fetch_one(pool)
+                .await
+                .unwrap(),
+            password
+        )
+    }
+
+    async fn create_test_session(user_id: i64, pool: &PgPool) -> Session {
+        let device_identifier = Uuid::new_v4().to_string();
+
+        sqlx::query_as::<_, Session>("\
+                INSERT INTO sessions (device_identifier, user_id)
+                VALUES ($1, $2)
+                RETURNING id, uuid, device_identifier, device_name, user_id, created_at, updated_at")
+            .bind(&device_identifier)
+            .bind(user_id)
+            .fetch_one(pool)
+            .await
+            .unwrap()
+    }
+
+    async fn count_sessions(pool: &PgPool) -> i64 {
+        let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM sessions")
+            .fetch_one(pool)
             .await
             .unwrap();
 
-        assert!(validate_user_and_password(&username, &password, &pool).await.unwrap().is_none());
+        row.0
     }
 }

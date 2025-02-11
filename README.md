@@ -61,7 +61,7 @@ client-server spec.
 - [ ] 4 Client authentication
     - [x] `GET /_matrix/client/v1/register/m.login.registration_token/validity`
     - [x] `GET /_matrix/client/v3/login`
-    - [ ] `POST /_matrix/client/v3/login`
+    - [x] `POST /_matrix/client/v3/login`
     - [ ] `POST /_matrix/client/v1/login/get_token`
     - [ ] `POST /_matrix/client/v3/refresh`
     - [ ] `POST /_matrix/client/v3/logout`

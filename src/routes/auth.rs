@@ -72,6 +72,8 @@ async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState
     let pool = data.db_pool.as_ref().unwrap();
     let homeserver = data.config.server.base_url.clone();
 
+    println!("{:?}", login_request);
+
     match services::auth::log_in(login_request, pool).await {
         Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms }) =>
             HttpResponse::Ok().json(LoginSuccess {
@@ -103,6 +105,7 @@ async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState
 #[cfg(test)]
 mod tests {
     use actix_web::{test, App};
+    use actix_web::http::StatusCode;
     use actix_web::web;
     use sqlx::PgPool;
     use crate::config::Config;
@@ -125,21 +128,107 @@ mod tests {
     }
 
     #[derive(Serialize)]
-    struct SimpleRequest {
-       r#type: String,
+    struct RequestWithIdentifier {
+        r#type: String,
+        identifier: RequestIdentifier,
+        password: String,
+    }
+
+    #[derive(Serialize)]
+    struct RequestIdentifier {
+        r#type: String,
+        user: String,
     }
 
     #[sqlx::test]
     async fn test_log_in(pool: PgPool) {
+        let (user, password) = crate::repo::auth::tests::create_test_user(&pool).await;
+        let payload = RequestWithIdentifier {
+            r#type: "m.login.password".to_string(),
+            identifier: RequestIdentifier {
+                r#type: String::from("m.id.user"),
+                user: user.name,
+            },
+            password
+        };
+
         let state = AppState { config: Config::test(), db_pool: Some(pool) };
         let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
-        let payload = SimpleRequest { r#type: "m.login.password".to_string() };
+
         let req = test::TestRequest::post().uri("/_matrix/client/v3/login").set_json(payload).to_request();
         let resp = test::call_service(&app, req).await;
 
-        // assert!(resp.status().is_success());
+        assert!(resp.status().is_success());
+    }
 
-        let body = resp.into_body();
-        println!("{:#?}", body);
+    #[sqlx::test]
+    async fn test_log_in_with_bad_password(pool: PgPool) {
+        let (user, _password) = crate::repo::auth::tests::create_test_user(&pool).await;
+        let payload = RequestWithIdentifier {
+            r#type: "m.login.password".to_string(),
+            identifier: RequestIdentifier {
+                r#type: String::from("m.id.user"),
+                user: user.name,
+            },
+            password: String::from("foobar"),
+        };
+
+        let state = AppState { config: Config::test(), db_pool: Some(pool) };
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
+
+        let req = test::TestRequest::post().uri("/_matrix/client/v3/login").set_json(payload).to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[derive(Serialize)]
+    struct RequestWithUser {
+        r#type: String,
+        user: String,
+        password: String,
+    }
+
+    #[sqlx::test]
+    async fn test_log_in_with_user(pool: PgPool) {
+        let (user, password) = crate::repo::auth::tests::create_test_user(&pool).await;
+        let payload = RequestWithUser {
+            r#type: "m.login.password".to_string(),
+            user: user.name,
+            password
+        };
+
+        let state = AppState { config: Config::test(), db_pool: Some(pool) };
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
+
+        let req = test::TestRequest::post().uri("/_matrix/client/v3/login").set_json(payload).to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
+    }
+
+    #[derive(Serialize)]
+    struct RequestWithAddress {
+        r#type: String,
+        address: String,
+        password: String,
+    }
+
+    #[sqlx::test]
+    async fn test_log_in_with_address(pool: PgPool) {
+        let (user, password) = crate::repo::auth::tests::create_test_user(&pool).await;
+        let payload = RequestWithAddress {
+            r#type: "m.login.password".to_string(),
+            address: user.name,
+            password
+        };
+
+        let state = AppState { config: Config::test(), db_pool: Some(pool) };
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
+
+        let req = test::TestRequest::post().uri("/_matrix/client/v3/login").set_json(payload).to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
     }
 }
