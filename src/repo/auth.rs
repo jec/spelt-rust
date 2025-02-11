@@ -12,7 +12,7 @@ struct ValidationRow {
 /// Looks up user by `username` and validates `password`; returns Ok(`user.id`)
 /// if user is found and password is valid; else returns Ok(None)
 pub async fn validate_user_and_password(username: &String, password: &String, pool: &PgPool) -> Result<Option<i64>, Error> {
-    let mut row_option = sqlx::query_as::<_, ValidationRow>("SELECT id, encrypted_password FROM users WHERE name = $1")
+    let row_option = sqlx::query_as::<_, ValidationRow>("SELECT id, encrypted_password FROM users WHERE name = $1")
         .bind(username)
         .fetch_optional(pool)
         .await?;
@@ -55,12 +55,18 @@ pub async fn create_session(user_id: i64, device_id: &String, device_name: &Stri
     Ok(uuid)
 }
 
+/// Validates the JWT signature and looks up the referenced Session; returns
+/// `Ok(sessions.uuid)` on success
+pub async fn validate_session() -> Result<String, Error> {
+    // TODO: Implement this
+    Ok(String::from("foo"))
+}
+
 #[cfg(test)]
 mod tests {
     use argon2::password_hash::rand_core::OsRng;
     use argon2::password_hash::{Salt, SaltString};
     use argon2::PasswordHasher;
-    use sqlx::Executor;
     use super::*;
 
     #[sqlx::test]

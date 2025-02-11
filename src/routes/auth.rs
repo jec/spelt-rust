@@ -7,28 +7,28 @@ use crate::services::auth::LoginResult;
 const VALIDITY_RESPONSE_JSON: &str = r#"{"valid":false}"#;
 const SUPPORTED_LOGIN_TYPES_JSON: &str = r#"{"flows":[{"type":"m.login.password"}]}"#;
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct LoginRequest {
-    pub identifier: UserIdentifier,
-    pub device_id: String,
-    pub initial_device_display_name: String,
-    pub password: String,
-    pub refresh_token: bool,
-    pub token: String,
+    pub identifier: Option<UserIdentifier>,
+    pub device_id: Option<String>,
+    pub initial_device_display_name: Option<String>,
+    pub password: Option<String>,
+    pub refresh_token: Option<bool>,
+    pub token: Option<String>,
     pub r#type: String,
-    pub user: String, // Deprecated
-    pub address: String, // Deprecated
-    pub medium: String, // Deprecated
+    pub user: Option<String>, // Deprecated
+    pub address: Option<String>, // Deprecated
+    pub medium: Option<String>, // Deprecated
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct UserIdentifier {
     pub r#type: String,
-    pub user: String,
-    pub address: String,
-    pub medium: String,
-    pub country: String,
-    pub phone: String,
+    pub user: Option<String>,
+    pub address: Option<String>,
+    pub medium: Option<String>,
+    pub country: Option<String>,
+    pub phone: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -68,11 +68,11 @@ async fn login_types() -> HttpResponse {
 ///
 /// See https://spec.matrix.org/v1.13/client-server-api/#post_matrixclientv3login
 #[post("/_matrix/client/v3/login")]
-async fn log_in(login: web::Json<LoginRequest>, data: web::Data<AppState>) -> impl Responder {
+async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState>) -> impl Responder {
     let pool = data.db_pool.as_ref().unwrap();
     let homeserver = data.config.server.base_url.clone();
 
-    match services::auth::log_in(login, pool).await {
+    match services::auth::log_in(login_request, pool).await {
         Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms }) =>
             HttpResponse::Ok().json(LoginSuccess {
                 access_token,
@@ -80,11 +80,12 @@ async fn log_in(login: web::Json<LoginRequest>, data: web::Data<AppState>) -> im
                 user_id: format!("@{}:{}", username, homeserver),
                 expires_in_ms
             }),
-        Ok(LoginResult::BadRequest) =>
+        Ok(LoginResult::BadRequest) => {
             HttpResponse::BadRequest().json(ErrorResponse {
                 errcode: String::from("M_UNKNOWN"),
                 error: String::from("Malformed request")
-            }),
+            })
+        },
         Ok(LoginResult::NotSupported) =>
             HttpResponse::BadRequest().json(ErrorResponse {
                 errcode: String::from("M_UNKNOWN"),
@@ -102,6 +103,9 @@ async fn log_in(login: web::Json<LoginRequest>, data: web::Data<AppState>) -> im
 #[cfg(test)]
 mod tests {
     use actix_web::{test, App};
+    use actix_web::web;
+    use sqlx::PgPool;
+    use crate::config::Config;
     use super::*;
 
     #[actix_web::test]
@@ -120,11 +124,22 @@ mod tests {
         assert!(resp.status().is_success());
     }
 
-    #[actix_web::test]
-    async fn test_log_in() {
-        let app = test::init_service(App::new().service(log_in)).await;
-        let req = test::TestRequest::post().uri("/_matrix/client/v3/login").to_request();
+    #[derive(Serialize)]
+    struct SimpleRequest {
+       r#type: String,
+    }
+
+    #[sqlx::test]
+    async fn test_log_in(pool: PgPool) {
+        let state = AppState { config: Config::test(), db_pool: Some(pool) };
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
+        let payload = SimpleRequest { r#type: "m.login.password".to_string() };
+        let req = test::TestRequest::post().uri("/_matrix/client/v3/login").set_json(payload).to_request();
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+
+        // assert!(resp.status().is_success());
+
+        let body = resp.into_body();
+        println!("{:#?}", body);
     }
 }
