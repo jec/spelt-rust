@@ -35,6 +35,10 @@ Spelt is implemented in [Rust](https://www.rust-lang.org/) using
     - `grant all on database spelt_dev to spelt_app;`
 2. Copy `config/app.example.toml` to `config/app.toml` and update values as
    appropriate.
+3. In `config/`, run the following to generate a pair of private and public key
+   files for signing JWTs:
+    - `openssl genpkey -outform pem -algorithm rsa -out pkey.pem`
+    - `openssl rsa -in pkey.pem -pubout -out public.pem`
 
 ## License
 

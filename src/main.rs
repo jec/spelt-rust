@@ -45,20 +45,3 @@ async fn main() -> Result<(), error::Error> {
 
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use sqlx::PgPool;
-
-    /// Proof of concept to be used elsewhere
-    #[sqlx::test]
-    async fn test_db_pool(pool: PgPool) -> sqlx::Result<()> {
-        let foo = sqlx::query("SELECT version() as version")
-            .fetch_one(&pool)
-            .await?;
-
-        println!("{:#?}", foo);
-
-        Ok(())
-    }
-}

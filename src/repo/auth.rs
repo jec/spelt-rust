@@ -1,5 +1,6 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use sqlx::PgPool;
+use uuid::Uuid;
 use crate::error::Error;
 
 #[derive(Debug, sqlx::FromRow)]
@@ -25,8 +26,33 @@ pub async fn validate_user_and_password(username: &String, password: &String, po
 
     match Argon2::default().verify_password(password.as_bytes(), &hash) {
         Ok(()) => Ok(Some(row.id)),
-        Err(err) => Ok(None),
+        Err(_) => Ok(None),
     }
+}
+
+/// Deletes any existing Sessions for `user_id` and `device_id`
+pub async fn invalidate_existing_sessions(user_id: i64, device_id: &String, pool: &PgPool) -> Result<(), Error> {
+    sqlx::query("DELETE FROM sessions WHERE user_id = $1 and device_identifier = $2")
+        .bind(user_id)
+        .bind(device_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Creates a session and returns `Ok(uuid)`
+pub async fn create_session(user_id: i64, device_id: &String, device_name: &String, pool: &PgPool) -> Result<String, Error> {
+    let uuid = Uuid::new_v4().to_string();
+    sqlx::query("INSERT INTO sessions (uuid, device_identifier, device_name, user_id) VALUES ($1, $2, $3, $4)")
+        .bind(&uuid)
+        .bind(&device_id)
+        .bind(&device_name)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(uuid)
 }
 
 #[cfg(test)]

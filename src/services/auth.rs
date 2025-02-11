@@ -2,6 +2,7 @@ use actix_web::web;
 use sqlx::PgPool;
 use crate::error::Error;
 use crate::routes::auth::LoginRequest;
+use crate::services;
 
 pub enum LoginResult {
     LoggedIn { access_token: String, device_id: String, username: String, expires_in_ms: u64 },
@@ -44,12 +45,19 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db_pool: &PgPool) ->
         return Ok(LoginResult::CredentialsInvalid);
     }
 
-    // Check for existing Session
-
-    // Create Session
+    // Delete existing Session if `device_id` specified; else generate a
+    // `device_id`.
     let user_id = user_id_opt.unwrap();
+    let device_id = if login.device_id.is_empty() {
+        uuid::Uuid::new_v4().to_string()
+    } else {
+        crate::repo::auth::invalidate_existing_sessions(user_id, &login.device_id, db_pool).await?;
+        login.device_id
+    };
 
-    let access_token = String::from("foo"); // TODO: Implement
-    let device_id = String::from("bar"); // TODO: Implement
-    Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms: 0 })
+    // Create Session and JWT
+    let session_uuid = crate::repo::auth::create_session(user_id, &device_id, &login.initial_device_display_name, db_pool).await?;
+    let access_token = services::jwt::create_jwt(&session_uuid)?;
+
+    Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms: services::jwt::JWT_TTL_SECONDS })
 }

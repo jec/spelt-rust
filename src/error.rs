@@ -58,3 +58,10 @@ impl From<twelf::Error> for Error {
         Self::Config(error.to_string())
     }
 }
+
+impl From<jsonwebtoken::errors::Error> for Error {
+    fn from(error: jsonwebtoken::errors::Error) -> Self {
+        eprintln!("{error}");
+        Self::Io(error.to_string())
+    }
+}
