@@ -15,8 +15,8 @@ pub enum Error {
 
 #[derive(Serialize)]
 pub struct ErrorResponse {
-    errcode: String,
-    error: String,
+    pub errcode: String,
+    pub error: String,
 }
 
 impl ResponseError for Error {

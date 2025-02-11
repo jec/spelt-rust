@@ -1,32 +1,42 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpResponse, Responder, ResponseError};
 use serde::{Deserialize, Serialize};
 use crate::{services, AppState};
+use crate::error::ErrorResponse;
+use crate::services::auth::LoginResult;
 
 const VALIDITY_RESPONSE_JSON: &str = r#"{"valid":false}"#;
 const SUPPORTED_LOGIN_TYPES_JSON: &str = r#"{"flows":[{"type":"m.login.password"}]}"#;
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    identifier: UserIdentifier,
-    device_id: String,
-    initial_device_display_name: String,
-    password: String,
-    refresh_token: bool,
-    token: String,
-    r#type: String,
-    user: String, // Deprecated
-    address: String, // Deprecated
-    medium: String, // Deprecated
+    pub identifier: UserIdentifier,
+    pub device_id: String,
+    pub initial_device_display_name: String,
+    pub password: String,
+    pub refresh_token: bool,
+    pub token: String,
+    pub r#type: String,
+    pub user: String, // Deprecated
+    pub address: String, // Deprecated
+    pub medium: String, // Deprecated
 }
 
 #[derive(Deserialize)]
 pub struct UserIdentifier {
-    r#type: String,
+    pub r#type: String,
+    pub user: String,
+    pub address: String,
+    pub medium: String,
+    pub country: String,
+    pub phone: String,
 }
 
 #[derive(Serialize)]
-pub struct LoginResponse {
-
+struct LoginSuccess {
+    access_token: String,
+    device_id: String,
+    user_id: String,
+    expires_in_ms: u64,
 }
 
 /// Checks the validity of a login token
@@ -59,8 +69,34 @@ async fn login_types() -> HttpResponse {
 /// See https://spec.matrix.org/v1.13/client-server-api/#post_matrixclientv3login
 #[post("/_matrix/client/v3/login")]
 async fn log_in(login: web::Json<LoginRequest>, data: web::Data<AppState>) -> impl Responder {
-    services::auth::log_in(login, &data.db_pool).await;
-    Ok::<&str, crate::error::Error>("foo")
+    let pool = data.db_pool.as_ref().unwrap();
+    let homeserver = data.config.server.base_url.clone();
+
+    match services::auth::log_in(login, pool).await {
+        Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms }) =>
+            HttpResponse::Ok().json(LoginSuccess {
+                access_token,
+                device_id,
+                user_id: format!("@{}:{}", username, homeserver),
+                expires_in_ms
+            }),
+        Ok(LoginResult::BadRequest) =>
+            HttpResponse::BadRequest().json(ErrorResponse {
+                errcode: String::from("M_UNKNOWN"),
+                error: String::from("Malformed request")
+            }),
+        Ok(LoginResult::NotSupported) =>
+            HttpResponse::BadRequest().json(ErrorResponse {
+                errcode: String::from("M_UNKNOWN"),
+                error: String::from("Unsupported login type")
+            }),
+        Ok(LoginResult::CredentialsInvalid) =>
+            HttpResponse::Forbidden().json(ErrorResponse {
+                errcode: String::from("M_FORBIDDEN"),
+                error: String::from("Username or password invalid")
+            }),
+        Err(err) => err.error_response()
+    }
 }
 
 #[cfg(test)]

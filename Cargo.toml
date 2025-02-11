@@ -14,3 +14,4 @@ serde = {  version = "1.0.217", features = ["derive"] }
 sqlx = { version = "0.8.3", features = ["runtime-tokio", "tls-native-tls", "postgres", "derive", "macros", "migrate", "uuid", "time", "json", "bigdecimal"] }
 toml = "0.8.20"
 twelf = { version = "0.15.0", default-features = false, features = ["toml"] }
+argon2 = "0.5.3"

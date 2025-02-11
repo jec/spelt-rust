@@ -8,6 +8,7 @@ mod config;
 mod error;
 mod routes;
 mod services;
+mod repo;
 
 struct AppState {
     config: config::Config,
