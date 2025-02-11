@@ -16,6 +16,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Configure
+      run: |
+        cd config &&
+        openssl genpkey -outform pem -algorithm rsa -out pkey.pem &&
+        openssl rsa -in pkey.pem -pubout -out public.pem
     - name: Build
       run: cargo build --verbose
     - name: Run tests
