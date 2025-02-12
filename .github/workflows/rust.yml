@@ -38,8 +38,8 @@ jobs:
     - name: Build
       run: cargo build --verbose
       env:
-        DATABASE_URL: postgres://postgres:mysecret@postgres/postgres
+        DATABASE_URL: postgres://postgres:mysecret@localhost/postgres
     - name: Run tests
       run: cargo test --verbose
       env:
-        DATABASE_URL: postgres://postgres:mysecret@postgres/postgres
+        DATABASE_URL: postgres://postgres:mysecret@localhost/postgres

@@ -10,5 +10,5 @@ port = 8080
 issuer = "https://chat.spelt.io"
 
 [database]
-dev_uri = "postgres://postgres:mysecret@postgres/postgres"
-test_uri = "postgres://postgres:mysecret@postgres/postgres"
+dev_uri = "postgres://postgres:mysecret@localhost/postgres"
+test_uri = "postgres://postgres:mysecret@localhost/postgres"
