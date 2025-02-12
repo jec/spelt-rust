@@ -12,6 +12,7 @@ env:
 jobs:
   container-job:
     runs-on: ubuntu-latest
+    container: ubuntu
 
     services:
       postgres:
