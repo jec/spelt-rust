@@ -17,3 +17,5 @@ thiserror = "2.0.11"
 toml = "0.8.20"
 twelf = { version = "0.15.0", default-features = false, features = ["toml"] }
 uuid = { version = "1.12.1", features = ["v4", "fast-rng"] }
+futures-util = "0.3.31"
+env_logger = "0.11.6"

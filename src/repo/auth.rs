@@ -1,4 +1,8 @@
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use argon2::password_hash::rand_core::OsRng;
+use argon2::password_hash::{Salt, SaltString};
+use futures_util::stream::BoxStream;
+use futures_util::TryStreamExt;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::error::Error;
@@ -28,6 +32,27 @@ pub struct Session {
 struct ValidationRow {
     id: i64,
     encrypted_password: String,
+}
+
+pub async fn users_stream(pool: &PgPool) -> BoxStream<Result<User, sqlx::Error>> {
+    sqlx::query_as::<_, User>("SELECT id, name, email, encrypted_password, created_at, updated_at FROM users")
+        .fetch(pool)
+}
+
+pub async fn create_user(name: &String, email: &String, password: &String, pool: &PgPool) -> Result<(), Error> {
+    let salt_string = SaltString::generate(&mut OsRng);
+    let salt: Salt = salt_string.as_ref().try_into().unwrap();
+    let argon2 = Argon2::default();
+    let hash = argon2.hash_password(password.as_bytes(), salt).unwrap().to_string();
+
+    sqlx::query("INSERT INTO users (name, email, encrypted_password) VALUES ($1, $2, $3)")
+        .bind(&name)
+        .bind(&email)
+        .bind(&hash)
+        .execute(pool)
+        .await?;
+
+    Ok(())
 }
 
 /// Looks up user by `username` and validates `password`; returns Ok(`user.id`)
