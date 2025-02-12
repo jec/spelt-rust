@@ -1,0 +1,14 @@
+# For GitHub Actions, copy this file to app.toml.
+
+[server]
+base_url = "https://chat.spelt.io"
+identity_server = "https://id.spelt.io"
+bind_address = "localhost"
+port = 8080
+
+[jwt]
+issuer = "https://chat.spelt.io"
+
+[database]
+dev_uri = "postgres://postgres:mysecret@postgres/postgres"
+test_uri = "postgres://postgres:mysecret@postgres/postgres"

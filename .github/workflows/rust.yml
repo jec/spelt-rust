@@ -10,18 +10,35 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  container-job:
     runs-on: ubuntu-latest
+    container: rust:spelt
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: mysecret
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Check out repository
+      uses: actions/checkout@v4
     - name: Configure
       run: |
         cd config &&
         openssl genpkey -outform pem -algorithm rsa -out pkey.pem &&
-        openssl rsa -in pkey.pem -pubout -out public.pem
+        openssl rsa -in pkey.pem -pubout -out public.pem &&
+        cp app.ci.toml app.toml
     - name: Build
       run: cargo build --verbose
+      env:
+        DATABASE_URL: postgres://postgres:mysecret@postgres/postgres
     - name: Run tests
       run: cargo test --verbose
+      env:
+        DATABASE_URL: postgres://postgres:mysecret@postgres/postgres
