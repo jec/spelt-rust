@@ -35,6 +35,14 @@ jobs:
         openssl genpkey -outform pem -algorithm rsa -out pkey.pem &&
         openssl rsa -in pkey.pem -pubout -out public.pem &&
         cp app.ci.toml app.toml
+    - name: Cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Build
       run: cargo build --verbose
       env:
