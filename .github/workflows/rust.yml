@@ -12,11 +12,12 @@ env:
 jobs:
   container-job:
     runs-on: ubuntu-latest
-    container: ubuntu
 
     services:
       postgres:
         image: postgres:17
+        ports:
+        - 5432:5432
         env:
           POSTGRES_PASSWORD: mysecret
         options: >-
