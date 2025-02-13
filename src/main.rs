@@ -56,7 +56,7 @@ async fn main() -> Result<(), error::Error> {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .wrap(from_fn(middleware::authenticator_fn::authenticator))
+            .wrap(from_fn(middleware::auth::authenticator))
             .wrap(from_fn(log_request_params))
             .app_data(web::Data::new(AppState {
                 config: conf.clone(),

@@ -1,8 +1,9 @@
 use actix_web::web;
 use sqlx::PgPool;
 use crate::error::Error;
+use crate::repo::auth::Session;
 use crate::routes::auth::LoginRequest;
-use crate::services;
+use crate::{repo, services};
 
 pub enum LoginResult {
     LoggedIn { access_token: String, device_id: String, username: String, expires_in_ms: u64 },
@@ -17,7 +18,7 @@ pub enum LoginResult {
 /// will be deleted. If the request does not specify a `device_id`, one will be
 /// generated.
 ///
-pub async fn log_in(login_request: web::Json<LoginRequest>, db_pool: &PgPool) -> Result<LoginResult, Error> {
+pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Result<LoginResult, Error> {
     // Check authentication type
     if login_request.r#type != "m.login.password" {
         return Ok(LoginResult::NotSupported);
@@ -54,7 +55,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db_pool: &PgPool) ->
     let user_id_opt = crate::repo::auth::validate_user_and_password(
         &username,
         &login_request.password.as_ref().unwrap(),
-        db_pool
+        pool
     ).await?;
 
     if user_id_opt.is_none() {
@@ -66,7 +67,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db_pool: &PgPool) ->
     let user_id = user_id_opt.unwrap();
     let device_id = match login_request.device_id.clone() {
         Some(device_id) => {
-            crate::repo::auth::invalidate_existing_sessions(user_id, &device_id, db_pool).await?;
+            crate::repo::auth::invalidate_existing_sessions(user_id, &device_id, pool).await?;
             device_id
         },
         None =>
@@ -78,10 +79,15 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db_pool: &PgPool) ->
         user_id,
         &device_id,
         &login_request.initial_device_display_name,
-        db_pool
+        pool
     ).await?;
 
     let access_token = services::jwt::create_jwt(&session.uuid.to_string(), 0)?;
 
     Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms: services::jwt::JWT_TTL_SECONDS })
+}
+
+/// Logs out a user, invalidating any held access tokens
+pub async fn log_out(session: &Session, pool: &PgPool) -> Result<(), Error> {
+    repo::auth::log_out(session.id, pool).await
 }

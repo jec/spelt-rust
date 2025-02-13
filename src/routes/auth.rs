@@ -156,7 +156,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in(pool: PgPool) {
-        let (user, password) = crate::repo::auth::tests::create_test_user(&pool).await;
+        let (user, password) = repo::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithIdentifier {
             r#type: "m.login.password".to_string(),
             identifier: RequestIdentifier {
@@ -205,7 +205,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in_with_user(pool: PgPool) {
-        let (user, password) = crate::repo::auth::tests::create_test_user(&pool).await;
+        let (user, password) = repo::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithUser {
             r#type: "m.login.password".to_string(),
             user: user.name,
@@ -230,7 +230,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in_with_address(pool: PgPool) {
-        let (user, password) = crate::repo::auth::tests::create_test_user(&pool).await;
+        let (user, password) = repo::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithAddress {
             r#type: "m.login.password".to_string(),
             address: user.name,
