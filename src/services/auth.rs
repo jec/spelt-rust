@@ -52,7 +52,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Re
         return Ok(LoginResult::BadRequest);
     }
 
-    let user_id_opt = crate::repo::auth::validate_user_and_password(
+    let user_id_opt = repo::auth::validate_user_and_password(
         &username,
         &login_request.password.as_ref().unwrap(),
         pool
@@ -67,7 +67,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Re
     let user_id = user_id_opt.unwrap();
     let device_id = match login_request.device_id.clone() {
         Some(device_id) => {
-            crate::repo::auth::invalidate_existing_sessions(user_id, &device_id, pool).await?;
+            repo::auth::invalidate_existing_sessions(user_id, &device_id, pool).await?;
             device_id
         },
         None =>
@@ -75,7 +75,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Re
     };
 
     // Create Session and JWT
-    let session = crate::repo::auth::create_session(
+    let session = repo::auth::create_session(
         user_id,
         &device_id,
         &login_request.initial_device_display_name,
@@ -87,7 +87,64 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Re
     Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms: services::jwt::JWT_TTL_SECONDS })
 }
 
+/// Validates the JWT signature and validates the referenced Session; returns
+/// `Ok(sessions.uuid)` on success
+pub async fn authorize_request(access_token: &String, pool: &PgPool) -> Result<Session, Error> {
+    let claims = services::jwt::validate_jwt(&access_token)?;
+    let uuid = claims.sub;
+
+    repo::auth::validate_session(&uuid, pool).await
+}
+
 /// Logs out a user, invalidating any held access tokens
-pub async fn log_out(session: &Session, pool: &PgPool) -> Result<(), Error> {
-    repo::auth::log_out(session.id, pool).await
+pub async fn log_out(session_id: i64, pool: &PgPool) -> Result<(), Error> {
+    repo::auth::log_out(session_id, pool).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::PgPool;
+    use crate::services;
+    use crate::repo::auth::invalidate_existing_sessions;
+    use crate::repo::auth::tests::{create_test_session, create_test_user};
+
+    #[sqlx::test]
+    async fn test_authorize_request (pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let (session, jwt) = create_test_session(user.id, 0, &pool).await;
+
+        let result = authorize_request(&jwt, &pool).await;
+        assert!(result.is_ok());
+    }
+
+    #[sqlx::test]
+    async fn test_authorize_request_without_session (pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let (session, jwt) = create_test_session(user.id, 0, &pool).await;
+        let _ = invalidate_existing_sessions(user.id, &session.device_identifier, &pool).await;
+
+        let result = authorize_request(&jwt, &pool).await;
+        assert!(result.is_err());
+    }
+
+    #[sqlx::test]
+    async fn test_authorize_request_with_expired (pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let (session, jwt) = create_test_session(user.id, -(services::jwt::JWT_TTL_SECONDS as i64) - 300, &pool).await;
+
+        println!("{}", jwt);
+        let result = authorize_request(&jwt, &pool).await;
+        assert!(result.is_err());
+    }
+
+    #[sqlx::test]
+    async fn test_log_out(pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let (session, jwt) = create_test_session(user.id, 0, &pool).await;
+        assert!(authorize_request(&jwt, &pool).await.is_ok());
+
+        assert!(log_out(session.id, &pool).await.is_ok());
+        assert!(authorize_request(&jwt, &pool).await.is_err());
+    }
 }

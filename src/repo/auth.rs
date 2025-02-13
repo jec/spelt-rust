@@ -103,14 +103,10 @@ pub async fn create_session(user_id: i64, device_id: &String, device_name: &Opti
     )
 }
 
-/// Validates the JWT signature and looks up the referenced Session; returns
-/// `Ok(sessions.uuid)` on success
-pub async fn authorize_request(access_token: String, pool: &PgPool) -> Result<Session, Error> {
-    let claims = services::jwt::validate_jwt(&access_token)?;
-    let uuid = claims.sub;
-
+/// Validates the referenced Session; returns `Ok(sessions.uuid)` on success
+pub async fn validate_session(session_uuid: &String, pool: &PgPool) -> Result<Session, Error> {
     if let Some(session) = sqlx::query_as::<_, Session>("SELECT id, uuid, device_identifier, device_name, user_id, created_at, updated_at FROM sessions WHERE uuid::text = $1")
-            .bind(&uuid)
+            .bind(session_uuid)
             .fetch_optional(pool)
             .await? {
         Ok(session)
@@ -191,35 +187,7 @@ pub mod tests {
         assert!(session.id > 0);
     }
 
-    #[sqlx::test]
-    async fn test_authorize_request (pool: PgPool) {
-        let (user, _password) = create_test_user(&pool).await;
-        let (session, jwt) = create_test_session(user.id, 0, &pool).await;
-
-        let result = authorize_request(jwt, &pool).await;
-        assert!(result.is_ok());
-    }
-
-    #[sqlx::test]
-    async fn test_authorize_request_without_session (pool: PgPool) {
-        let (user, _password) = create_test_user(&pool).await;
-        let (session, jwt) = create_test_session(user.id, 0, &pool).await;
-        let _ = invalidate_existing_sessions(user.id, &session.device_identifier, &pool).await;
-
-        let result = authorize_request(jwt, &pool).await;
-        assert!(result.is_err());
-    }
-
-    #[sqlx::test]
-    async fn test_authorize_request_with_expired (pool: PgPool) {
-        let (user, _password) = create_test_user(&pool).await;
-        let (session, jwt) = create_test_session(user.id, -(services::jwt::JWT_TTL_SECONDS as i64) - 300, &pool).await;
-
-        println!("{}", jwt);
-        let result = authorize_request(jwt, &pool).await;
-        assert!(result.is_err());
-    }
-
+    /// Helper function to create a User for testing
     pub async fn create_test_user(pool: &PgPool) -> (User, String) {
         let mut rng = rand::thread_rng();
         let argon2 = Argon2::default();
@@ -246,7 +214,8 @@ pub mod tests {
         )
     }
 
-    async fn create_test_session(user_id: i64, jwt_now_offset: i64, pool: &PgPool) -> (Session, String) {
+    /// Helper function to create a Session for testing
+    pub async fn create_test_session(user_id: i64, jwt_now_offset: i64, pool: &PgPool) -> (Session, String) {
         let device_identifier = Uuid::new_v4().to_string();
 
         let session = sqlx::query_as::<_, Session>("\

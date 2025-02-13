@@ -4,7 +4,7 @@ use actix_web::{Error, HttpMessage};
 use actix_web::middleware::Next;
 use actix_web::web::Data;
 use twelf::reexports::log;
-use crate::{repo, AppState};
+use crate::{services, AppState};
 use crate::repo::auth::Session;
 
 /// Authenticates the request using the Bearer token, if any
@@ -21,7 +21,7 @@ pub async fn authenticator(req: ServiceRequest, next: Next<impl MessageBody>) ->
 
                 if let Some(state) = req.app_data::<Data<AppState>>() {
                     if let Some(pool) = state.db_pool.as_ref() {
-                        match repo::auth::authorize_request(token.to_string(), pool).await {
+                        match services::auth::authorize_request(&token.to_string(), pool).await {
                             Ok(session) => {
                                 log::info!(
                                     "Authenticated user {} with session {} on device {}",

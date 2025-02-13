@@ -15,6 +15,7 @@ mod middleware;
 mod repo;
 mod routes;
 mod services;
+mod extractors;
 
 #[derive(Debug)]
 struct AppState {
@@ -67,12 +68,7 @@ async fn main() -> Result<(), error::Error> {
             .service(routes::auth::check_validity)
             .service(routes::auth::login_types)
             .service(routes::auth::log_in)
-            .service(
-                // Endpoints requiring authentication
-                web::scope("/")
-                    .wrap(from_fn(middleware::auth::require_authenticated))
-                    .service(routes::auth::log_out)
-            )
+            .service(routes::auth::log_out)
     })
         .bind((bind_address, port))?
         .run()

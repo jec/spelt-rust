@@ -18,7 +18,7 @@ client-server spec.
     - [x] `POST /_matrix/client/v3/login`
     - [ ] `POST /_matrix/client/v1/login/get_token`
     - [ ] `POST /_matrix/client/v3/refresh`
-    - [ ] `POST /_matrix/client/v3/logout`
+    - [x] `POST /_matrix/client/v3/logout`
     - [ ] `POST /_matrix/client/v3/logout/all`
     - [ ] `POST /_matrix/client/v3/account/deactivate`
     - [ ] `POST /_matrix/client/v3/account/password`
