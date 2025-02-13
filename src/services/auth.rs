@@ -112,7 +112,7 @@ mod tests {
     #[sqlx::test]
     async fn test_authorize_request (pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
-        let (session, jwt) = create_test_session(user.id, 0, &pool).await;
+        let (_session, jwt) = create_test_session(user.id, 0, &pool).await;
 
         let result = authorize_request(&jwt, &pool).await;
         assert!(result.is_ok());
@@ -131,9 +131,8 @@ mod tests {
     #[sqlx::test]
     async fn test_authorize_request_with_expired (pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
-        let (session, jwt) = create_test_session(user.id, -(services::jwt::JWT_TTL_SECONDS as i64) - 300, &pool).await;
+        let (_session, jwt) = create_test_session(user.id, -(services::jwt::JWT_TTL_SECONDS as i64) - 300, &pool).await;
 
-        println!("{}", jwt);
         let result = authorize_request(&jwt, &pool).await;
         assert!(result.is_err());
     }

@@ -5,7 +5,6 @@ use actix_web::middleware::Next;
 use actix_web::web::Data;
 use twelf::reexports::log;
 use crate::{services, AppState};
-use crate::repo::auth::Session;
 
 /// Authenticates the request using the Bearer token, if any
 ///
@@ -41,18 +40,6 @@ pub async fn authenticator(req: ServiceRequest, next: Next<impl MessageBody>) ->
             }
         }
     }
-
-    // call next middleware
-    next.call(req).await
-}
-
-pub async fn require_authenticated(req: ServiceRequest, next: Next<impl MessageBody>) -> Result<ServiceResponse<impl MessageBody>, Error> {
-    if req.extensions().get::<Session>().is_none() {
-        log::info!("Authentication required: failed");
-        // Abort the middleware call chain.
-        return Err(Error::from(crate::error::Error::Auth(String::from("failed"))));
-    }
-    log::info!("Authentication required: passed");
 
     // call next middleware
     next.call(req).await

@@ -2,7 +2,6 @@ use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{Salt, SaltString};
 use futures_util::stream::BoxStream;
-use futures_util::TryStreamExt;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::error::Error;
@@ -35,7 +34,12 @@ struct ValidationRow {
     encrypted_password: String,
 }
 
-pub async fn users_stream(pool: &PgPool) -> BoxStream<Result<User, sqlx::Error>> {
+/// Returns a row stream of current users
+///
+/// The intended use for this in the `cli` module didn't work, so the query is
+/// repeated in that function.
+/// TODO: Figure out why calling this doesn't work.
+pub async fn _users_stream(pool: &PgPool) -> BoxStream<Result<User, sqlx::Error>> {
     sqlx::query_as::<_, User>("SELECT id, name, email, encrypted_password, created_at, updated_at FROM users")
         .fetch(pool)
 }

@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpMessage, HttpResponse, Responder, ResponseError};
+use actix_web::{get, post, web, HttpResponse, Responder, ResponseError};
 use serde::{Deserialize, Serialize};
 use crate::{services, AppState};
 use crate::error::ErrorResponse;
@@ -268,7 +268,7 @@ mod tests {
     #[sqlx::test]
     async fn test_log_out(pool: PgPool) {
         let (user, _password) = repo::auth::tests::create_test_user(&pool).await;
-        let (session, jwt) = repo::auth::tests::create_test_session(user.id, 0, &pool).await;
+        let (_session, jwt) = repo::auth::tests::create_test_session(user.id, 0, &pool).await;
 
         let state = AppState { config: Config::test(), db_pool: Some(pool.clone()) };
         let app = test::init_service(
