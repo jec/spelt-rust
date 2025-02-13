@@ -1,7 +1,8 @@
-use actix_web::{get, post, web, HttpResponse, Responder, ResponseError};
+use actix_web::{get, post, web, HttpMessage, HttpRequest, HttpResponse, Responder, ResponseError};
 use serde::{Deserialize, Serialize};
-use crate::{services, AppState};
+use crate::{repo, services, AppState};
 use crate::error::ErrorResponse;
+use crate::repo::auth::Session;
 use crate::services::auth::LoginResult;
 
 const VALIDITY_RESPONSE_JSON: &str = r#"{"valid":false}"#;
@@ -98,6 +99,19 @@ async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState
                 errcode: String::from("M_FORBIDDEN"),
                 error: String::from("Username or password invalid")
             }),
+        Err(err) => err.error_response()
+    }
+}
+
+#[post("/_matrix/client/v3/logout")]
+async fn log_out(req: HttpRequest, data: web::Data<AppState>) -> impl Responder {
+    let pool = data.db_pool.as_ref().unwrap();
+    let extensions = req.extensions();
+    let session = extensions.get::<Session>().unwrap();
+
+    match repo::auth::log_out(session.id, pool).await {
+        Ok(_) =>
+            HttpResponse::Ok().json("{}"),
         Err(err) => err.error_response()
     }
 }

@@ -119,6 +119,16 @@ pub async fn authorize_request(access_token: String, pool: &PgPool) -> Result<Se
     }
 }
 
+/// Logs out a User by deleting the authenticated Session
+pub async fn log_out(session_id: i64, pool: &PgPool) -> Result<(), Error> {
+    sqlx::query("DELETE FROM sessions WHERE id = $1")
+        .bind(session_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 pub mod tests {
     use argon2::password_hash::rand_core::OsRng;
