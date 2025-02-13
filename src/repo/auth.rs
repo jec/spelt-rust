@@ -6,6 +6,7 @@ use futures_util::TryStreamExt;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::error::Error;
+use crate::services;
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct User {
@@ -104,9 +105,18 @@ pub async fn create_session(user_id: i64, device_id: &String, device_name: &Opti
 
 /// Validates the JWT signature and looks up the referenced Session; returns
 /// `Ok(sessions.uuid)` on success
-pub async fn validate_session() -> Result<String, Error> {
-    // TODO: Implement this
-    Ok(String::from("foo"))
+pub async fn authorize_request(access_token: String, pool: &PgPool) -> Result<Session, Error> {
+    let claims = services::jwt::validate_jwt(&access_token)?;
+    let uuid = claims.sub;
+
+    if let Some(session) = sqlx::query_as::<_, Session>("SELECT id, uuid, device_identifier, device_name, user_id, created_at, updated_at FROM sessions WHERE uuid::text = $1")
+            .bind(&uuid)
+            .fetch_optional(pool)
+            .await? {
+        Ok(session)
+    } else {
+        Err(Error::Auth(String::from("Session logged out")))
+    }
 }
 
 #[cfg(test)]

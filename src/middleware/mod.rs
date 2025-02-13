@@ -1,1 +1,1 @@
-pub mod authenticator;
+pub mod authenticator_fn;

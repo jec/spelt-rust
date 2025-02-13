@@ -7,7 +7,6 @@ use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 use twelf::reexports::log;
 use twelf::reexports::log::LevelFilter;
-use crate::middleware::authenticator::AuthenticatorFactory;
 
 mod cli;
 mod config;
@@ -17,11 +16,13 @@ mod repo;
 mod routes;
 mod services;
 
+#[derive(Debug)]
 struct AppState {
     config: config::Config,
     db_pool: Option<Pool<Postgres>>,
 }
 
+/// TODO: Redact secrets or remove this.
 async fn log_request_params(
     req: ServiceRequest,
     next: Next<impl MessageBody>,
@@ -44,7 +45,7 @@ async fn main() -> Result<(), error::Error> {
         .connect(&conf.database.dev_uri.as_ref().expect("Value not found for config key: database.dev_uri"))
         .await?;
 
-    // Run command and exit if command is given.
+    // If command is given, run it and exit.
     if args.command.is_some() {
         cli::run_command(&args, &pool).await;
         return Ok(());
@@ -55,7 +56,7 @@ async fn main() -> Result<(), error::Error> {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .wrap(AuthenticatorFactory)
+            .wrap(from_fn(middleware::authenticator_fn::authenticator))
             .wrap(from_fn(log_request_params))
             .app_data(web::Data::new(AppState {
                 config: conf.clone(),
@@ -65,6 +66,7 @@ async fn main() -> Result<(), error::Error> {
             .service(routes::info::server_names)
             .service(routes::auth::check_validity)
             .service(routes::auth::login_types)
+            .service(routes::auth::log_in)
     })
         .bind((bind_address, port))?
         .run()

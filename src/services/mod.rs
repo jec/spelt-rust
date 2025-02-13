@@ -1,2 +1,2 @@
 pub mod auth;
-mod jwt;
+pub mod jwt;

@@ -77,6 +77,8 @@ pub async fn create_user(args: &Args, pool: &PgPool) {
     std::io::stdout().flush().unwrap();
     std::io::stdin().read_line(&mut password1).expect("Failed to read input.");
 
+    password0 = password0.trim().to_string();
+    password1 = password1.trim().to_string();
     if password0 != password1 {
         println!("Passwords do not match.");
         return;

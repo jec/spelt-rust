@@ -3,14 +3,14 @@ use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, 
 use serde::{Deserialize, Serialize};
 use crate::error::Error;
 
-pub const JWT_TTL_SECONDS: u64 = 300;
+pub const JWT_TTL_SECONDS: u64 = 600;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct JwtClaims {
-    sub: String,
-    iat: u64,
-    nbf: u64,
-    exp: u64,
+pub struct JwtClaims {
+    pub sub: String,
+    pub iat: u64,
+    pub nbf: u64,
+    pub exp: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,14 +37,15 @@ pub fn create_jwt(session_uuid: &String) -> Result<String, Error> {
     )?)
 }
 
-pub fn validate_jwt(jwt: String) -> Result<(), Error> {
-    decode::<JwtClaims>(
-        &jwt,
-        &DecodingKey::from_rsa_pem(include_bytes!("../../config/public.pem")).unwrap(),
-        &Validation::new(Algorithm::RS256)
-    )?;
-
-    Ok(())
+pub fn validate_jwt(jwt: &String) -> Result<JwtClaims, Error> {
+    Ok(
+        decode::<JwtClaims>(
+            &jwt,
+            &DecodingKey::from_rsa_pem(include_bytes!("../../config/public.pem")).unwrap(),
+            &Validation::new(Algorithm::RS256)
+        )?
+        .claims
+    )
 }
 
 #[cfg(test)]
@@ -64,7 +65,7 @@ mod tests {
     fn test_validate_jwt() {
         let session_uuid = uuid::Uuid::new_v4().to_string();
         let jwt = create_jwt(&session_uuid).unwrap();
-        let result = validate_jwt(jwt);
+        let result = validate_jwt(&jwt);
 
         println!("{:?}", result);
         assert!(result.is_ok());
@@ -73,8 +74,9 @@ mod tests {
     #[test]
     fn test_validate_jwt_with_bad_signature() {
         let session_uuid = uuid::Uuid::new_v4().to_string();
-        let jwt = create_jwt(&session_uuid).unwrap();
-        let result = validate_jwt(format!("{}x", jwt));
+        let mut jwt = create_jwt(&session_uuid).unwrap();
+        jwt.push_str("x");
+        let result = validate_jwt(&jwt);
 
         println!("{:?}", result);
         assert!(result.is_err());
