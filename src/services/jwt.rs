@@ -19,8 +19,8 @@ struct JwtValidator {
     claims: JwtClaims,
 }
 
-pub fn create_jwt(session_uuid: &String) -> Result<String, Error> {
-    let now: u64 = Utc::now().timestamp() as u64;
+pub fn create_jwt(session_uuid: &String, now_offset: i64) -> Result<String, Error> {
+    let now: u64 = (Utc::now().timestamp() + now_offset) as u64;
     let claims = JwtClaims {
         sub: session_uuid.into(),
         iat: now,
@@ -55,7 +55,7 @@ mod tests {
     #[test]
     fn test_create_jwt() {
         let session_uuid = uuid::Uuid::new_v4().to_string();
-        let jwt = create_jwt(&session_uuid).unwrap();
+        let jwt = create_jwt(&session_uuid, 0).unwrap();
 
         println!("{}", jwt);
         assert!(jwt.len() > 0);
@@ -64,7 +64,7 @@ mod tests {
     #[test]
     fn test_validate_jwt() {
         let session_uuid = uuid::Uuid::new_v4().to_string();
-        let jwt = create_jwt(&session_uuid).unwrap();
+        let jwt = create_jwt(&session_uuid, 0).unwrap();
         let result = validate_jwt(&jwt);
 
         println!("{:?}", result);
@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn test_validate_jwt_with_bad_signature() {
         let session_uuid = uuid::Uuid::new_v4().to_string();
-        let mut jwt = create_jwt(&session_uuid).unwrap();
+        let mut jwt = create_jwt(&session_uuid, 0).unwrap();
         jwt.push_str("x");
         let result = validate_jwt(&jwt);
 

@@ -81,7 +81,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db_pool: &PgPool) ->
         db_pool
     ).await?;
 
-    let access_token = services::jwt::create_jwt(&session.uuid.to_string())?;
+    let access_token = services::jwt::create_jwt(&session.uuid.to_string(), 0)?;
 
     Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms: services::jwt::JWT_TTL_SECONDS })
 }

@@ -163,7 +163,7 @@ pub mod tests {
     #[sqlx::test]
     async fn test_invalidate_existing_sessions(pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
-        let session = create_test_session(user.id, &pool).await;
+        let (session, _jwt) = create_test_session(user.id, 0, &pool).await;
 
         assert_eq!(count_sessions(&pool).await, 1);
 
@@ -175,7 +175,7 @@ pub mod tests {
     #[sqlx::test]
     async fn test_invalidate_existing_sessions_with_other_user(pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
-        let session = create_test_session(user.id, &pool).await;
+        let (session, _jwt) = create_test_session(user.id, 0, &pool).await;
 
         invalidate_existing_sessions(user.id + 1, &session.device_identifier, &pool).await.unwrap();
 
@@ -189,6 +189,35 @@ pub mod tests {
         let session = create_session(user.id, &device_id, &None, &pool).await.unwrap();
 
         assert!(session.id > 0);
+    }
+
+    #[sqlx::test]
+    async fn test_authorize_request (pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let (session, jwt) = create_test_session(user.id, 0, &pool).await;
+
+        let result = authorize_request(jwt, &pool).await;
+        assert!(result.is_ok());
+    }
+
+    #[sqlx::test]
+    async fn test_authorize_request_without_session (pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let (session, jwt) = create_test_session(user.id, 0, &pool).await;
+        let _ = invalidate_existing_sessions(user.id, &session.device_identifier, &pool).await;
+
+        let result = authorize_request(jwt, &pool).await;
+        assert!(result.is_err());
+    }
+
+    #[sqlx::test]
+    async fn test_authorize_request_with_expired (pool: PgPool) {
+        let (user, _password) = create_test_user(&pool).await;
+        let (session, jwt) = create_test_session(user.id, -(services::jwt::JWT_TTL_SECONDS as i64) - 300, &pool).await;
+
+        println!("{}", jwt);
+        let result = authorize_request(jwt, &pool).await;
+        assert!(result.is_err());
     }
 
     pub async fn create_test_user(pool: &PgPool) -> (User, String) {
@@ -217,10 +246,10 @@ pub mod tests {
         )
     }
 
-    async fn create_test_session(user_id: i64, pool: &PgPool) -> Session {
+    async fn create_test_session(user_id: i64, jwt_now_offset: i64, pool: &PgPool) -> (Session, String) {
         let device_identifier = Uuid::new_v4().to_string();
 
-        sqlx::query_as::<_, Session>("\
+        let session = sqlx::query_as::<_, Session>("\
                 INSERT INTO sessions (device_identifier, user_id)
                 VALUES ($1, $2)
                 RETURNING id, uuid, device_identifier, device_name, user_id, created_at, updated_at")
@@ -228,7 +257,11 @@ pub mod tests {
             .bind(user_id)
             .fetch_one(pool)
             .await
-            .unwrap()
+            .unwrap();
+
+        let jwt = services::jwt::create_jwt(&session.uuid.to_string(), jwt_now_offset).unwrap();
+
+        (session, jwt)
     }
 
     async fn count_sessions(pool: &PgPool) -> i64 {
