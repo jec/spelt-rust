@@ -5,7 +5,10 @@ use crate::error::ErrorResponse;
 use crate::extractors::authenticated_user::AuthenticatedUser;
 use crate::services::auth::LoginResult;
 
+/// JSON response to [`check_validity()`]
 const VALIDITY_RESPONSE_JSON: &str = r#"{"valid":false}"#;
+
+/// JSON response to [`login_types()`]
 const SUPPORTED_LOGIN_TYPES_JSON: &str = r#"{"flows":[{"type":"m.login.password"}]}"#;
 
 #[derive(Debug, Deserialize)]
@@ -101,6 +104,9 @@ async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState
     }
 }
 
+/// Logs out a user
+///
+/// See https://spec.matrix.org/v1.13/client-server-api/#post_matrixclientv3logout
 #[post("/_matrix/client/v3/logout")]
 async fn log_out(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Responder {
     let pool = data.db_pool.as_ref().unwrap();

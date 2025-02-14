@@ -3,18 +3,29 @@ use actix_web::http::StatusCode;
 use serde::Serialize;
 use thiserror::Error;
 
+/// Internal error types that implement [`ResponseError`] so they're rendered
+/// appropriately in HTTP responses
 #[derive(Error, Debug)]
 pub enum Error {
+    /// Represents an error reading the application config file
     #[error("Configuration error: {0}")]
     Config(String),
+
+    /// Represents an error reading/writing the database
     #[error("Database error: {0}")]
     Db(String),
+
+    /// Represents an unknown read/write error
     #[error("IO error: {0}")]
     Io(String),
+
+    /// Represents a JWT validation error or missing authentication for an
+    /// endpoint requiring it
     #[error("Authentication failed: {0}")]
     Auth(String),
 }
 
+/// JSON response payload in the case of an error, per the Matrix spec
 #[derive(Serialize)]
 pub struct ErrorResponse {
     pub errcode: String,

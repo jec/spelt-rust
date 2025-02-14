@@ -5,18 +5,13 @@ use crate::error::Error;
 
 pub const JWT_TTL_SECONDS: u64 = 600;
 
+/// The fields ("claims") encoded in a JWT
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JwtClaims {
     pub sub: String,
     pub iat: u64,
     pub nbf: u64,
     pub exp: u64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct JwtValidator {
-    header: String,
-    claims: JwtClaims,
 }
 
 pub fn create_jwt(session_uuid: &String, now_offset: i64) -> Result<String, Error> {

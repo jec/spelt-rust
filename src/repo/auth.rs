@@ -7,6 +7,7 @@ use uuid::Uuid;
 use crate::error::Error;
 use crate::services;
 
+/// Model for database `users` table
 #[derive(Debug, sqlx::FromRow)]
 pub struct User {
     pub id: i64,
@@ -17,6 +18,7 @@ pub struct User {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
+/// Model for database `sessions` table
 #[derive(Debug, sqlx::FromRow)]
 pub struct Session {
     pub id: i64,
@@ -28,6 +30,7 @@ pub struct Session {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
+/// Query result used by [`validate_user_and_password()`]
 #[derive(Debug, sqlx::FromRow)]
 struct ValidationRow {
     id: i64,
@@ -60,8 +63,8 @@ pub async fn create_user(name: &String, email: &String, password: &String, pool:
     Ok(())
 }
 
-/// Looks up user by `username` and validates `password`; returns Ok(`user.id`)
-/// if user is found and password is valid; else returns Ok(None)
+/// Looks up user by `username` and validates `password`; returns `Ok(Some(user.id))`
+/// if user is found and password is valid; else returns `Ok(None)`
 pub async fn validate_user_and_password(username: &String, password: &String, pool: &PgPool) -> Result<Option<i64>, Error> {
     let row_option = sqlx::query_as::<_, ValidationRow>("SELECT id, encrypted_password FROM users WHERE name = $1")
         .bind(username)

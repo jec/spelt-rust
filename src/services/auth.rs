@@ -5,6 +5,7 @@ use crate::repo::auth::Session;
 use crate::routes::auth::LoginRequest;
 use crate::{repo, services};
 
+/// Possible results of calling [`log_in()`]
 pub enum LoginResult {
     LoggedIn { access_token: String, device_id: String, username: String, expires_in_ms: u64 },
     CredentialsInvalid,
@@ -12,9 +13,9 @@ pub enum LoginResult {
     BadRequest,
 }
 
-/// Authenticates a user and, if successful, returns a LoginResult with a token
+/// Authenticates a user and, if successful, returns a `LoginResult` with a token
 ///
-/// If the request specifies a `device_id`, any previous Session for that device
+/// If the request specifies a `device_id`, any previous `Session` for that device
 /// will be deleted. If the request does not specify a `device_id`, one will be
 /// generated.
 ///
@@ -87,8 +88,8 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Re
     Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms: services::jwt::JWT_TTL_SECONDS })
 }
 
-/// Validates the JWT signature and validates the referenced Session; returns
-/// `Ok(sessions.uuid)` on success
+/// Validates the JWT signature and validates the referenced `Session`; returns
+/// `Ok(s: Session)` on success
 pub async fn authorize_request(access_token: &String, pool: &PgPool) -> Result<Session, Error> {
     let claims = services::jwt::validate_jwt(&access_token)?;
     let uuid = claims.sub;

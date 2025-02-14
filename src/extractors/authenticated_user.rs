@@ -3,6 +3,32 @@ use futures_util::future::{err, ok, Ready};
 use crate::error;
 use crate::repo::auth::Session;
 
+/// An Actix extractor that retrieves the current authenticated User ID and
+/// Session ID
+///
+/// Endpoints that require authentication must include this as a parameter in
+/// their handler functions.
+///
+/// This extractor relies on the middleware function [`authenticator()`] to have
+/// found and validated an Authorization header. It then places the authenticated
+/// [`Session`] in the request Extensions.
+///
+/// If this extractor fails to find a [`Session`] in the request Extensions,
+/// then there is no valid authentication for the request, and this will return
+/// a 401/Unauthorized.
+///
+/// # Example
+///
+/// Notice the `AuthenticatedUser` parameter in the handler function.
+///
+/// ```
+/// #[post("/_matrix/client/v3/logout")]
+/// async fn log_out(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Responder {
+///     //...
+/// }
+/// ```
+///
+/// [`authenticator()`]: crate::middleware::auth::authenticator
 pub struct AuthenticatedUser {
     pub user_id: i64,
     pub session_id: i64,
