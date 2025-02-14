@@ -132,6 +132,17 @@ pub async fn log_out(session_id: i64, pool: &PgPool) -> Result<(), Error> {
     Ok(())
 }
 
+/// Deletes any existing Sessions for `user_id`, logging out the user from all
+/// devices
+pub async fn log_out_all(user_id: i64, pool: &PgPool) -> Result<(), Error> {
+    sqlx::query("DELETE FROM sessions WHERE user_id = $1")
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 pub mod tests {
     use argon2::password_hash::rand_core::OsRng;

@@ -102,6 +102,11 @@ pub async fn log_out(session_id: i64, pool: &PgPool) -> Result<(), Error> {
     repo::auth::log_out(session_id, pool).await
 }
 
+/// Logs out a user from all devices, invalidating any held access tokens
+pub async fn log_out_all(user_id: i64, pool: &PgPool) -> Result<(), Error> {
+    repo::auth::log_out_all(user_id, pool).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

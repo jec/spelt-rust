@@ -118,6 +118,20 @@ async fn log_out(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Res
     }
 }
 
+/// Logs out a user across all sessions and devices
+///
+/// See https://spec.matrix.org/v1.13/client-server-api/#post_matrixclientv3logoutall
+#[post("/_matrix/client/v3/logout/all")]
+async fn log_out_all(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Responder {
+    let pool = data.db_pool.as_ref().unwrap();
+
+    match services::auth::log_out_all(auth.user_id, pool).await {
+        Ok(_) =>
+            HttpResponse::Ok().json("{}"),
+        Err(err) => err.error_response()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use actix_web::{test, App};
@@ -292,6 +306,31 @@ mod tests {
 
         assert!(resp.status().is_success());
         assert!(services::auth::authorize_request(&jwt, &pool).await.is_err());
+    }
+
+    #[sqlx::test]
+    async fn test_log_out_all(pool: PgPool) {
+        let (user, _password) = repo::auth::tests::create_test_user(&pool).await;
+        let (_session, jwt_1) = repo::auth::tests::create_test_session(user.id, 0, &pool).await;
+        let (_session, jwt_2) = repo::auth::tests::create_test_session(user.id, 0, &pool).await;
+
+        let state = AppState { config: Config::test(), db_pool: Some(pool.clone()) };
+        let app = test::init_service(
+            App::new()
+                .wrap(from_fn(middleware::auth::authenticator))
+                .app_data(web::Data::new(state))
+                .service(log_out_all)
+        ).await;
+
+        let req = test::TestRequest::post()
+            .uri("/_matrix/client/v3/logout/all")
+            .append_header(("Authorization", format!("Bearer {}", jwt_1)))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
+        assert!(services::auth::authorize_request(&jwt_1, &pool).await.is_err());
+        assert!(services::auth::authorize_request(&jwt_2, &pool).await.is_err());
     }
 
     async fn access_token_from_body(resp: ServiceResponse) -> String {
