@@ -10,7 +10,7 @@ use crate::repo::auth::Session;
 /// their handler functions.
 ///
 /// This extractor relies on the middleware function [`authenticator()`] to have
-/// found and validated an Authorization header. It then places the authenticated
+/// found and validated an Authorization header, which places the authenticated
 /// [`Session`] in the request Extensions.
 ///
 /// If this extractor fails to find a [`Session`] in the request Extensions,

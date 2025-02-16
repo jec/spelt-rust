@@ -15,6 +15,11 @@ use crate::{services, AppState};
 /// See [`AuthenticatedUser`] for the mechanism that request handlers must use
 /// to enforce authentication.
 ///
+/// TODO:
+///   The Matrix spec requires that homeservers also support the deprecated
+///   alternative of including an `access_token` query parameter.
+///   See https://spec.matrix.org/v1.13/client-server-api/#using-access-tokens
+///
 /// [`Session`]: crate::repo::auth::Session
 /// [`Extensions`]: actix_web::dev::Extensions
 /// [`AuthenticatedUser`]: crate::extractors::authenticated_user::AuthenticatedUser

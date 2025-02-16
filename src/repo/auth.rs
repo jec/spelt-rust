@@ -63,6 +63,15 @@ pub async fn create_user(name: &String, email: &String, password: &String, pool:
     Ok(())
 }
 
+pub async fn get_user(user_id: i64, pool: &PgPool) -> Result<Option<User>, Error> {
+    Ok(
+        sqlx::query_as::<_, User>("SELECT id, name, email, encrypted_password, created_at, updated_at FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?
+    )
+}
+
 /// Looks up user by `username` and validates `password`; returns `Ok(Some(user.id))`
 /// if user is found and password is valid; else returns `Ok(None)`
 pub async fn validate_user_and_password(username: &String, password: &String, pool: &PgPool) -> Result<Option<i64>, Error> {
