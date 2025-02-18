@@ -3,7 +3,6 @@ use clap::Parser;
 use futures_util::TryStreamExt;
 use sqlx::PgPool;
 use crate::repo;
-use crate::repo::auth::User;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -37,11 +36,7 @@ pub async fn run_users_command(args: &Args, pool: &PgPool) {
 }
 
 pub async fn list_users(pool: &PgPool) -> () {
-    // TODO:
-    //   repo::auth::users_stream() returns exactly this, but it won't compile
-    //   when calling try_next() on its return value.
-    let mut stream = sqlx::query_as::<_, User>("SELECT id, name, email, encrypted_password, created_at, updated_at FROM users ORDER BY name")
-        .fetch(pool);
+    let mut stream = repo::auth::users_stream(&pool).await;
     let mut has_users = false;
 
     while let Ok(Some(user)) = stream.try_next().await {

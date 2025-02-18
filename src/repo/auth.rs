@@ -38,11 +38,7 @@ struct ValidationRow {
 }
 
 /// Returns a row stream of current users
-///
-/// The intended use for this in the `cli` module didn't work, so the query is
-/// repeated in that function.
-/// TODO: Figure out why calling this doesn't work.
-pub async fn _users_stream(pool: &PgPool) -> BoxStream<Result<User, sqlx::Error>> {
+pub async fn users_stream(pool: &PgPool) -> BoxStream<Result<User, sqlx::Error>> {
     sqlx::query_as::<_, User>("SELECT id, name, email, encrypted_password, created_at, updated_at FROM users")
         .fetch(pool)
 }
