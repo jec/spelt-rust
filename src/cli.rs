@@ -2,7 +2,7 @@ use std::io::Write;
 use clap::Parser;
 use futures_util::TryStreamExt;
 use sqlx::PgPool;
-use crate::repo;
+use crate::store;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -36,7 +36,7 @@ pub async fn run_users_command(args: &Args, pool: &PgPool) {
 }
 
 pub async fn list_users(pool: &PgPool) -> () {
-    let mut stream = repo::auth::users_stream(&pool).await;
+    let mut stream = store::auth::users_stream(&pool).await;
     let mut has_users = false;
 
     while let Ok(Some(user)) = stream.try_next().await {
@@ -79,7 +79,7 @@ pub async fn create_user(args: &Args, pool: &PgPool) {
         return;
     }
 
-    match repo::auth::create_user(
+    match store::auth::create_user(
         args.args.get(0).unwrap(),
         args.args.get(1).unwrap(),
         &password0,

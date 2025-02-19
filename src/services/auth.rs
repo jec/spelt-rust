@@ -1,9 +1,9 @@
 use actix_web::web;
 use sqlx::PgPool;
 use crate::error::Error;
-use crate::repo::auth::Session;
+use crate::store::auth::Session;
 use crate::routes::auth::LoginRequest;
-use crate::{repo, services};
+use crate::{store, services};
 
 /// Possible results of calling [`log_in()`]
 pub enum LoginResult {
@@ -53,7 +53,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Re
         return Ok(LoginResult::BadRequest);
     }
 
-    let user_id_opt = repo::auth::validate_user_and_password(
+    let user_id_opt = store::auth::validate_user_and_password(
         &username,
         &login_request.password.as_ref().unwrap(),
         pool
@@ -68,7 +68,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Re
     let user_id = user_id_opt.unwrap();
     let device_id = match login_request.device_id.clone() {
         Some(device_id) => {
-            repo::auth::invalidate_existing_sessions(user_id, &device_id, pool).await?;
+            store::auth::invalidate_existing_sessions(user_id, &device_id, pool).await?;
             device_id
         },
         None =>
@@ -76,7 +76,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, pool: &PgPool) -> Re
     };
 
     // Create Session and JWT
-    let session = repo::auth::create_session(
+    let session = store::auth::create_session(
         user_id,
         &device_id,
         &login_request.initial_device_display_name,
@@ -94,17 +94,17 @@ pub async fn authorize_request(access_token: &String, pool: &PgPool) -> Result<S
     let claims = services::jwt::validate_jwt(&access_token)?;
     let uuid = claims.sub;
 
-    repo::auth::validate_session(&uuid, pool).await
+    store::auth::validate_session(&uuid, pool).await
 }
 
 /// Logs out a user, invalidating any held access tokens
 pub async fn log_out(session_id: i64, pool: &PgPool) -> Result<(), Error> {
-    repo::auth::log_out(session_id, pool).await
+    store::auth::log_out(session_id, pool).await
 }
 
 /// Logs out a user from all devices, invalidating any held access tokens
 pub async fn log_out_all(user_id: i64, pool: &PgPool) -> Result<(), Error> {
-    repo::auth::log_out_all(user_id, pool).await
+    store::auth::log_out_all(user_id, pool).await
 }
 
 #[cfg(test)]
@@ -112,8 +112,8 @@ mod tests {
     use super::*;
     use sqlx::PgPool;
     use crate::services;
-    use crate::repo::auth::invalidate_existing_sessions;
-    use crate::repo::auth::tests::{create_test_session, create_test_user};
+    use crate::store::auth::invalidate_existing_sessions;
+    use crate::store::auth::tests::{create_test_session, create_test_user};
 
     #[sqlx::test]
     async fn test_authorize_request (pool: PgPool) {

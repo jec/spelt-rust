@@ -143,7 +143,7 @@ mod tests {
     use sqlx::PgPool;
     use twelf::reexports::serde_json;
     use crate::config::Config;
-    use crate::{middleware, repo, services};
+    use crate::{middleware, store, services};
     use super::*;
 
     #[actix_web::test]
@@ -177,7 +177,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in(pool: PgPool) {
-        let (user, password) = repo::auth::tests::create_test_user(&pool).await;
+        let (user, password) = store::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithIdentifier {
             r#type: "m.login.password".to_string(),
             identifier: RequestIdentifier {
@@ -203,7 +203,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in_with_bad_password(pool: PgPool) {
-        let (user, _password) = repo::auth::tests::create_test_user(&pool).await;
+        let (user, _password) = store::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithIdentifier {
             r#type: "m.login.password".to_string(),
             identifier: RequestIdentifier {
@@ -234,7 +234,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in_with_user(pool: PgPool) {
-        let (user, password) = repo::auth::tests::create_test_user(&pool).await;
+        let (user, password) = store::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithUser {
             r#type: "m.login.password".to_string(),
             user: user.name,
@@ -264,7 +264,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in_with_address(pool: PgPool) {
-        let (user, password) = repo::auth::tests::create_test_user(&pool).await;
+        let (user, password) = store::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithAddress {
             r#type: "m.login.password".to_string(),
             address: user.name,
@@ -287,8 +287,8 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_out(pool: PgPool) {
-        let (user, _password) = repo::auth::tests::create_test_user(&pool).await;
-        let (_session, jwt) = repo::auth::tests::create_test_session(user.id, 0, &pool).await;
+        let (user, _password) = store::auth::tests::create_test_user(&pool).await;
+        let (_session, jwt) = store::auth::tests::create_test_session(user.id, 0, &pool).await;
 
         let state = AppState { config: Config::test(), db_pool: Some(pool.clone()) };
         let app = test::init_service(
@@ -310,9 +310,9 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_out_all(pool: PgPool) {
-        let (user, _password) = repo::auth::tests::create_test_user(&pool).await;
-        let (_session, jwt_1) = repo::auth::tests::create_test_session(user.id, 0, &pool).await;
-        let (_session, jwt_2) = repo::auth::tests::create_test_session(user.id, 0, &pool).await;
+        let (user, _password) = store::auth::tests::create_test_user(&pool).await;
+        let (_session, jwt_1) = store::auth::tests::create_test_session(user.id, 0, &pool).await;
+        let (_session, jwt_2) = store::auth::tests::create_test_session(user.id, 0, &pool).await;
 
         let state = AppState { config: Config::test(), db_pool: Some(pool.clone()) };
         let app = test::init_service(
