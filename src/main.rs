@@ -13,6 +13,7 @@ mod config;
 mod error;
 mod extractors;
 mod middleware;
+mod models;
 mod routes;
 mod services;
 mod store;

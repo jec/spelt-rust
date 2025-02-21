@@ -176,7 +176,7 @@ mod tests {
         user: String,
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_log_in(pool: PgPool) {
         let (user, password) = pg::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithIdentifier {
@@ -202,7 +202,7 @@ mod tests {
         assert!(services::auth::authorize_request(&jwt, &pool).await.is_ok());
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_log_in_with_bad_password(pool: PgPool) {
         let (user, _password) = pg::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithIdentifier {
@@ -233,7 +233,7 @@ mod tests {
         password: String,
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_log_in_with_user(pool: PgPool) {
         let (user, password) = pg::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithUser {
@@ -263,7 +263,7 @@ mod tests {
         password: String,
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_log_in_with_address(pool: PgPool) {
         let (user, password) = pg::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithAddress {
@@ -286,7 +286,7 @@ mod tests {
         assert!(services::auth::authorize_request(&jwt, &pool).await.is_ok());
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_log_out(pool: PgPool) {
         let (user, _password) = pg::auth::tests::create_test_user(&pool).await;
         let (_session, jwt) = pg::auth::tests::create_test_session(user.id, 0, &pool).await;
@@ -309,7 +309,7 @@ mod tests {
         assert!(services::auth::authorize_request(&jwt, &pool).await.is_err());
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_log_out_all(pool: PgPool) {
         let (user, _password) = pg::auth::tests::create_test_user(&pool).await;
         let (_session, jwt_1) = pg::auth::tests::create_test_session(user.id, 0, &pool).await;

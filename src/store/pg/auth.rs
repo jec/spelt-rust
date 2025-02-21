@@ -1,4 +1,5 @@
 use crate::error::Error;
+use crate::models::auth::{Session, User};
 use crate::services;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{Salt, SaltString};
@@ -6,29 +7,6 @@ use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use futures_util::stream::BoxStream;
 use sqlx::PgPool;
 use uuid::Uuid;
-
-/// Model for database `users` table
-#[derive(Debug, sqlx::FromRow)]
-pub struct User {
-    pub id: i64,
-    pub name: String,
-    pub email: String,
-    pub encrypted_password: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
-
-/// Model for database `sessions` table
-#[derive(Debug, sqlx::FromRow)]
-pub struct Session {
-    pub id: i64,
-    pub uuid: Uuid,
-    pub device_identifier: String,
-    pub device_name: Option<String>,
-    pub user_id: i64,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
 
 /// Query result used by [`validate_user_and_password()`]
 #[derive(Debug, sqlx::FromRow)]
@@ -158,13 +136,13 @@ pub mod tests {
     use faker_rand::en_us::names::FirstName;
     use rand::Rng;
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_validate_user_and_password(pool: PgPool) {
         let (user, password) = create_test_user(&pool).await;
         assert_eq!(validate_user_and_password(&user.name, &password, &pool).await.unwrap(), Some(user.id));
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_validate_user_and_password_with_missing(pool: PgPool) {
         let username = String::from("foobar");
         let password = String::from("bazbar");
@@ -172,14 +150,14 @@ pub mod tests {
         assert!(validate_user_and_password(&username, &password, &pool).await.unwrap().is_none());
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_validate_user_and_password_with_mismatch(pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
         let not_the_password = String::from("foobar");
         assert!(validate_user_and_password(&user.name, &not_the_password, &pool).await.unwrap().is_none());
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_invalidate_existing_sessions(pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
         let (session, _jwt) = create_test_session(user.id, 0, &pool).await;
@@ -191,7 +169,7 @@ pub mod tests {
         assert_eq!(count_sessions(&pool).await, 0);
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_invalidate_existing_sessions_with_other_user(pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
         let (session, _jwt) = create_test_session(user.id, 0, &pool).await;
@@ -201,7 +179,7 @@ pub mod tests {
         assert_eq!(count_sessions(&pool).await, 1);
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_create_session (pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
         let device_id = Uuid::new_v4().to_string();

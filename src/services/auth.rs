@@ -2,7 +2,7 @@ use crate::error::Error;
 use crate::routes::auth::LoginRequest;
 use crate::services;
 use crate::store::pg;
-use crate::store::pg::auth::Session;
+use crate::models::auth::Session;
 use actix_web::web;
 use sqlx::PgPool;
 
@@ -116,7 +116,7 @@ mod tests {
     use crate::store::pg::auth::tests::{create_test_session, create_test_user};
     use sqlx::PgPool;
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_authorize_request (pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
         let (_session, jwt) = create_test_session(user.id, 0, &pool).await;
@@ -125,7 +125,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_authorize_request_without_session (pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
         let (session, jwt) = create_test_session(user.id, 0, &pool).await;
@@ -135,7 +135,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_authorize_request_with_expired (pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
         let (_session, jwt) = create_test_session(user.id, -(services::jwt::JWT_TTL_SECONDS as i64) - 300, &pool).await;
@@ -144,7 +144,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[sqlx::test]
+    #[sqlx::test(migrations = "migrations/pg")]
     async fn test_log_out(pool: PgPool) {
         let (user, _password) = create_test_user(&pool).await;
         let (session, jwt) = create_test_session(user.id, 0, &pool).await;
