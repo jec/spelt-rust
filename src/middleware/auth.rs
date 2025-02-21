@@ -20,7 +20,7 @@ use crate::{services, AppState};
 ///   alternative of including an `access_token` query parameter.
 ///   See https://spec.matrix.org/v1.13/client-server-api/#using-access-tokens
 ///
-/// [`Session`]: crate::store::auth::Session
+/// [`Session`]: crate::store::pg::auth::Session
 /// [`Extensions`]: actix_web::dev::Extensions
 /// [`AuthenticatedUser`]: crate::extractors::authenticated_user::AuthenticatedUser
 pub async fn authenticator(req: ServiceRequest, next: Next<impl MessageBody>) -> Result<ServiceResponse<impl MessageBody>, Error> {

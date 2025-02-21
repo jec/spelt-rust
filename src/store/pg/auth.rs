@@ -1,11 +1,11 @@
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use crate::error::Error;
+use crate::services;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{Salt, SaltString};
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use futures_util::stream::BoxStream;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::error::Error;
-use crate::services;
 
 /// Model for database `users` table
 #[derive(Debug, sqlx::FromRow)]
@@ -150,13 +150,13 @@ pub async fn log_out_all(user_id: i64, pool: &PgPool) -> Result<(), Error> {
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use argon2::password_hash::rand_core::OsRng;
     use argon2::password_hash::{Salt, SaltString};
     use argon2::PasswordHasher;
     use faker_rand::en_us::internet::Domain;
     use faker_rand::en_us::names::FirstName;
     use rand::Rng;
-    use super::*;
 
     #[sqlx::test]
     async fn test_validate_user_and_password(pool: PgPool) {

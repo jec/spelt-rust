@@ -1,6 +1,6 @@
+use crate::error::Error;
 use serde::Serialize;
 use sqlx::PgPool;
-use crate::error::Error;
 
 #[derive(Debug, Serialize)]
 pub struct CreateRoomEvent {

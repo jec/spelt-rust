@@ -1,8 +1,8 @@
+use crate::extractors::authenticated_user::AuthenticatedUser;
+use crate::{services, AppState};
 use actix_web::{post, web, HttpResponse, Responder, ResponseError};
 use serde::{Deserialize, Serialize};
 use twelf::reexports::serde_json;
-use crate::{services, AppState};
-use crate::extractors::authenticated_user::AuthenticatedUser;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateRoomRequest {
@@ -55,6 +55,4 @@ async fn create_room(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-}
+mod tests {}

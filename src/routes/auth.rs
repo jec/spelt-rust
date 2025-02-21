@@ -1,9 +1,9 @@
-use actix_web::{get, post, web, HttpResponse, Responder, ResponseError};
-use serde::{Deserialize, Serialize};
-use crate::{services, AppState};
 use crate::error::ErrorResponse;
 use crate::extractors::authenticated_user::AuthenticatedUser;
 use crate::services::auth::LoginResult;
+use crate::{services, AppState};
+use actix_web::{get, post, web, HttpResponse, Responder, ResponseError};
+use serde::{Deserialize, Serialize};
 
 /// JSON response to [`check_validity()`]
 const VALIDITY_RESPONSE_JSON: &str = r#"{"valid":false}"#;
@@ -134,17 +134,18 @@ async fn log_out_all(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{test, App};
+    use super::*;
+    use crate::config::Config;
+    use crate::store::pg;
+    use crate::{middleware, services};
     use actix_web::body::to_bytes;
     use actix_web::dev::ServiceResponse;
     use actix_web::http::StatusCode;
     use actix_web::middleware::from_fn;
     use actix_web::web;
+    use actix_web::{test, App};
     use sqlx::PgPool;
     use twelf::reexports::serde_json;
-    use crate::config::Config;
-    use crate::{middleware, store, services};
-    use super::*;
 
     #[actix_web::test]
     async fn test_check_validity() {
@@ -177,7 +178,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in(pool: PgPool) {
-        let (user, password) = store::auth::tests::create_test_user(&pool).await;
+        let (user, password) = pg::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithIdentifier {
             r#type: "m.login.password".to_string(),
             identifier: RequestIdentifier {
@@ -203,7 +204,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in_with_bad_password(pool: PgPool) {
-        let (user, _password) = store::auth::tests::create_test_user(&pool).await;
+        let (user, _password) = pg::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithIdentifier {
             r#type: "m.login.password".to_string(),
             identifier: RequestIdentifier {
@@ -234,7 +235,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in_with_user(pool: PgPool) {
-        let (user, password) = store::auth::tests::create_test_user(&pool).await;
+        let (user, password) = pg::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithUser {
             r#type: "m.login.password".to_string(),
             user: user.name,
@@ -264,7 +265,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_in_with_address(pool: PgPool) {
-        let (user, password) = store::auth::tests::create_test_user(&pool).await;
+        let (user, password) = pg::auth::tests::create_test_user(&pool).await;
         let payload = RequestWithAddress {
             r#type: "m.login.password".to_string(),
             address: user.name,
@@ -287,8 +288,8 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_out(pool: PgPool) {
-        let (user, _password) = store::auth::tests::create_test_user(&pool).await;
-        let (_session, jwt) = store::auth::tests::create_test_session(user.id, 0, &pool).await;
+        let (user, _password) = pg::auth::tests::create_test_user(&pool).await;
+        let (_session, jwt) = pg::auth::tests::create_test_session(user.id, 0, &pool).await;
 
         let state = AppState { config: Config::test(), db_pool: Some(pool.clone()) };
         let app = test::init_service(
@@ -310,9 +311,9 @@ mod tests {
 
     #[sqlx::test]
     async fn test_log_out_all(pool: PgPool) {
-        let (user, _password) = store::auth::tests::create_test_user(&pool).await;
-        let (_session, jwt_1) = store::auth::tests::create_test_session(user.id, 0, &pool).await;
-        let (_session, jwt_2) = store::auth::tests::create_test_session(user.id, 0, &pool).await;
+        let (user, _password) = pg::auth::tests::create_test_user(&pool).await;
+        let (_session, jwt_1) = pg::auth::tests::create_test_session(user.id, 0, &pool).await;
+        let (_session, jwt_2) = pg::auth::tests::create_test_session(user.id, 0, &pool).await;
 
         let state = AppState { config: Config::test(), db_pool: Some(pool.clone()) };
         let app = test::init_service(

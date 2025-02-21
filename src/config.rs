@@ -1,8 +1,8 @@
-use std::path::PathBuf;
 use faker_rand::en_us::internet::Domain;
 use faker_rand::en_us::names::FirstName;
 use rand::Rng;
 use serde::Serialize;
+use std::path::PathBuf;
 use twelf::{config, Layer};
 
 #[config]

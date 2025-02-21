@@ -1,7 +1,7 @@
 use actix_web::{FromRequest, HttpMessage, HttpRequest};
 use futures_util::future::{err, ok, Ready};
 use crate::error;
-use crate::store::auth::Session;
+use crate::store::pg::auth::Session;
 
 /// An Actix extractor that retrieves the current authenticated User ID and
 /// Session ID

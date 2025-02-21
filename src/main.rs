@@ -1,10 +1,10 @@
-use std::path::PathBuf;
-use actix_web::{web, App, Error, HttpServer};
 use actix_web::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::middleware::{from_fn, Logger, Next};
-use sqlx::{Pool, Postgres};
+use actix_web::{web, App, Error, HttpServer};
 use sqlx::postgres::PgPoolOptions;
+use sqlx::{Pool, Postgres};
+use std::path::PathBuf;
 use twelf::reexports::log;
 use twelf::reexports::log::LevelFilter;
 

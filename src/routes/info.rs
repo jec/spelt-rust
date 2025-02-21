@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use crate::AppState;
 use actix_web::{get, web, Responder};
 use serde::Serialize;
-use crate::AppState;
+use std::collections::HashMap;
 
 const VERSIONS: [&str; 1] = ["v1.13"];
 
@@ -29,11 +29,11 @@ async fn server_names(data: web::Data<AppState>) -> actix_web::Result<impl Respo
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-    use actix_web::{test, App};
-    use actix_web::web::Bytes;
-    use crate::config::Config;
     use super::*;
+    use crate::config::Config;
+    use actix_web::web::Bytes;
+    use actix_web::{test, App};
+    use std::collections::HashSet;
 
     #[actix_web::test]
     async fn test_get_versions() {

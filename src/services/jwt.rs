@@ -1,7 +1,7 @@
+use crate::error::Error;
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use crate::error::Error;
 
 pub const JWT_TTL_SECONDS: u64 = 600;
 

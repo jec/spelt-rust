@@ -1,8 +1,8 @@
-use std::io::Write;
+use crate::store::pg;
 use clap::Parser;
 use futures_util::TryStreamExt;
 use sqlx::PgPool;
-use crate::store;
+use std::io::Write;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -36,7 +36,7 @@ pub async fn run_users_command(args: &Args, pool: &PgPool) {
 }
 
 pub async fn list_users(pool: &PgPool) -> () {
-    let mut stream = store::auth::users_stream(&pool).await;
+    let mut stream = pg::auth::users_stream(&pool).await;
     let mut has_users = false;
 
     while let Ok(Some(user)) = stream.try_next().await {
@@ -79,7 +79,7 @@ pub async fn create_user(args: &Args, pool: &PgPool) {
         return;
     }
 
-    match store::auth::create_user(
+    match pg::auth::create_user(
         args.args.get(0).unwrap(),
         args.args.get(1).unwrap(),
         &password0,
