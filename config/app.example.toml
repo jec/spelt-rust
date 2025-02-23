@@ -9,6 +9,18 @@ port = 8080
 [jwt]
 issuer = "https://chat.spelt.io"
 
-[database]
-dev_uri = "postgres://dev_user:password@localhost/dev"
-test_uri = "postgres://test_user:password@localhost/test"
+[database.dev]
+host = "localhost"
+port = 8000
+username = "spelt_app"
+password = "my-secret"
+namespace = "spelt"
+database_name = "dev"
+
+[database.test]
+host = "localhost"
+port = 8000
+username = "spelt_app"
+password = "my-secret"
+# The tests create randomly named databases within the specified namespace.
+namespace = "spelt"

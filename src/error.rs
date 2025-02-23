@@ -72,6 +72,13 @@ impl From<sqlx::Error> for Error {
     }
 }
 
+impl From<surrealdb::Error> for Error {
+    fn from(error: surrealdb::Error) -> Self {
+        eprintln!("{error}");
+        Self::Db(error.to_string())
+    }
+}
+
 impl From<twelf::Error> for Error {
     fn from(error: twelf::Error) -> Self {
         eprintln!("{error}");

@@ -28,8 +28,21 @@ impl Config {
                 issuer: format!("https://{}/base", rng.gen::<Domain>().to_string()),
             },
             database: DatabaseConfig {
-                dev_uri: Some(format!("https://{}:{}@{}/prod", rng.gen::<FirstName>().to_string(), rng.gen::<FirstName>().to_string(), rng.gen::<Domain>().to_string())),
-                test_uri: Some(format!("https://{}:{}@{}/prod", rng.gen::<FirstName>().to_string(), rng.gen::<FirstName>().to_string(), rng.gen::<Domain>().to_string())),
+                dev: DevDatabaseConfig {
+                    hostname: format!("{}.{}", rng.gen::<FirstName>().to_string(), rng.gen::<Domain>().to_string()),
+                    port: rng.gen_range(1024..=65535),
+                    username: rng.gen::<FirstName>().to_string(),
+                    password: rng.gen::<FirstName>().to_string(),
+                    namespace: rng.gen::<FirstName>().to_string(),
+                    database_name: rng.gen::<FirstName>().to_string(),
+                },
+                test: TestDatabaseConfig {
+                    hostname: format!("{}.{}", rng.gen::<FirstName>().to_string(), rng.gen::<Domain>().to_string()),
+                    port: rng.gen_range(1024..=65535),
+                    username: rng.gen::<FirstName>().to_string(),
+                    password: rng.gen::<FirstName>().to_string(),
+                    namespace: rng.gen::<FirstName>().to_string(),
+                }
             },
         }
     }
@@ -53,8 +66,29 @@ pub struct JwtConfig {
 #[config]
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct DatabaseConfig {
-    pub dev_uri: Option<String>,
-    pub test_uri: Option<String>,
+    pub dev: DevDatabaseConfig,
+    pub test: TestDatabaseConfig,
+}
+
+#[config]
+#[derive(Debug, Default, Clone, Serialize)]
+pub struct DevDatabaseConfig {
+    pub hostname: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub namespace: String,
+    pub database_name: String,
+}
+
+#[config]
+#[derive(Debug, Default, Clone, Serialize)]
+pub struct TestDatabaseConfig {
+    pub hostname: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub namespace: String,
 }
 
 pub fn load(path: PathBuf) -> Result<Config, twelf::Error> {

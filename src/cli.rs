@@ -1,8 +1,9 @@
-use crate::store::pg;
 use clap::Parser;
 use futures_util::TryStreamExt;
-use sqlx::PgPool;
 use std::io::Write;
+use surrealdb::engine::remote::ws::Client;
+use surrealdb::Surreal;
+use crate::store;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -18,25 +19,25 @@ pub fn parse() -> Args {
     Args::parse()
 }
 
-pub async fn run_command(args: &Args, pool: &PgPool) {
+pub async fn run_command(args: &Args, db: &Surreal<Client>) {
     match &args.command {
-        Some(s) if s == "users" => run_users_command(&args, pool).await,
+        Some(s) if s == "users" => run_users_command(&args, db).await,
         Some(s) => eprintln!("Invalid command: {}", s),
         None => (),
     }
 }
 
-pub async fn run_users_command(args: &Args, pool: &PgPool) {
+pub async fn run_users_command(args: &Args, db: &Surreal<Client>) {
     match &args.subcommand {
-        Some(s) if s == "list" => list_users(pool).await,
-        Some(s) if s == "create" => create_user(args, pool).await,
+        Some(s) if s == "list" => list_users(db).await,
+        Some(s) if s == "create" => create_user(args, db).await,
         Some(s) => eprintln!("Invalid `users` subcommand: {}", s),
         None => (),
     }
 }
 
-pub async fn list_users(pool: &PgPool) -> () {
-    let mut stream = pg::auth::users_stream(&pool).await;
+pub async fn list_users(db: &Surreal<Client>) -> () {
+    let mut stream = store::auth::users_stream(db).await;
     let mut has_users = false;
 
     while let Ok(Some(user)) = stream.try_next().await {
@@ -55,7 +56,7 @@ pub async fn list_users(pool: &PgPool) -> () {
     ()
 }
 
-pub async fn create_user(args: &Args, pool: &PgPool) {
+pub async fn create_user(args: &Args, db: &Surreal<Client>) {
     if args.args.len() != 2 {
         eprintln!("`users create` requires 2 arguments: username and email");
         return;
@@ -79,11 +80,11 @@ pub async fn create_user(args: &Args, pool: &PgPool) {
         return;
     }
 
-    match pg::auth::create_user(
+    match store::auth::create_user(
         args.args.get(0).unwrap(),
         args.args.get(1).unwrap(),
         &password0,
-        &pool
+        &db
     ).await {
         Ok(_) => println!("User created."),
         Err(e) => eprintln!("Error creating user: {}", e),

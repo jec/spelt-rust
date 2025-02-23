@@ -28,11 +28,16 @@ Spelt is implemented in [Rust](https://www.rust-lang.org/) using
 
 ## Setup
 
-1. Create PostgreSQL development database and user. Below are examples. (Don't
-   use SUPERUSER for the production database.)
-    - `create database spelt_dev;`
-    - `create role spelt_app superuser password 'my-secret';`
-    - `grant all on database spelt_dev to spelt_app;`
+0. If you haven't previously started the Surreal database server, start it now
+   with your persistent storage engine of choice. Here is an example using the
+   RocksDB engine. (Subsequent starts can omit the user and password as they will
+   have been written to disk.)
+    - `surreal start --user root --pass 'my-secret' rocksdb:///home/$LOGUSER/lib/surrealdb/surreal.db`
+1. Start the Surreal CLI as root and create the namespace user for the Spelt
+   app. Modify the following as needed.
+    - `surreal sql --user root --pass 'my-secret' --ns spelt --db test --pretty --endpoint http://localhost:8000/`
+    - `USE NS spelt;`
+    - `DEFINE USER spelt_app ON NAMESPACE PASSWORD 'my-secret' ROLES EDITOR;`
 2. Copy `config/app.example.toml` to `config/app.toml` and update values as
    appropriate.
 3. In `config/`, run the following to generate a pair of private and public key
