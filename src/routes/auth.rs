@@ -111,7 +111,7 @@ async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState
 async fn log_out(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Responder {
     let db = &data.db;
 
-    match services::auth::log_out(auth.session_id, db).await {
+    match services::auth::log_out(&auth.session_id, db).await {
         Ok(_) =>
             HttpResponse::Ok().json("{}"),
         Err(err) => err.error_response()
@@ -125,7 +125,7 @@ async fn log_out(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Res
 async fn log_out_all(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Responder {
     let db = &data.db;
 
-    match services::auth::log_out_all(auth.user_id, db).await {
+    match services::auth::log_out_all(&auth.user_id, db).await {
         Ok(_) =>
             HttpResponse::Ok().json("{}"),
         Err(err) => err.error_response()
@@ -134,6 +134,7 @@ async fn log_out_all(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl
 
 #[cfg(test)]
 mod tests {
+    use std::future::Future;
     use super::*;
     use crate::config::Config;
     use crate::{middleware, services, store};
@@ -294,7 +295,7 @@ mod tests {
     async fn test_log_out() {
         run_with_db(async |db| {
             let (user, _password) = store::auth::tests::create_test_user(&db).await;
-            let (_session, jwt) = store::auth::tests::create_test_session(user.id, 0, &db).await;
+            let (_session, jwt) = store::auth::tests::create_test_session(&user.id, 0, &db).await;
 
             let state = AppState { config: Config::test(), db: db.clone() };
             let app = test::init_service(
@@ -315,30 +316,33 @@ mod tests {
         }.await).await;
     }
 
+    #[test]
     async fn test_log_out_all() {
-        run_with_db(async |db| {
-            let (user, _password) = store::auth::tests::create_test_user(&db).await;
-            let (_session, jwt_1) = store::auth::tests::create_test_session(user.id, 0, &db).await;
-            let (_session, jwt_2) = store::auth::tests::create_test_session(user.id, 0, &db).await;
+        run_with_db(test_log_out_all_impl).await;
+    }
 
-            let state = AppState { config: Config::test(), db: db.clone() };
-            let app = test::init_service(
-                App::new()
-                    .wrap(from_fn(middleware::auth::authenticator))
-                    .app_data(web::Data::new(state))
-                    .service(log_out_all)
-            ).await;
+    async fn test_log_out_all_impl(db: Surreal<Any>) {
+        let (user, _password) = store::auth::tests::create_test_user(&db).await;
+        let (_session, jwt_1) = store::auth::tests::create_test_session(&user.id, 0, &db).await;
+        let (_session, jwt_2) = store::auth::tests::create_test_session(&user.id, 0, &db).await;
 
-            let req = test::TestRequest::post()
-                .uri("/_matrix/client/v3/logout/all")
-                .append_header(("Authorization", format!("Bearer {}", jwt_1)))
-                .to_request();
-            let resp = test::call_service(&app, req).await;
+        let state = AppState { config: Config::test(), db: db.clone() };
+        let app = test::init_service(
+            App::new()
+                .wrap(from_fn(middleware::auth::authenticator))
+                .app_data(web::Data::new(state))
+                .service(log_out_all)
+        ).await;
 
-            assert!(resp.status().is_success());
-            assert!(services::auth::authorize_request(&jwt_1, &db).await.is_err());
-            assert!(services::auth::authorize_request(&jwt_2, &db).await.is_err());
-        }.await).await;
+        let req = test::TestRequest::post()
+            .uri("/_matrix/client/v3/logout/all")
+            .append_header(("Authorization", format!("Bearer {}", jwt_1)))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
+        assert!(services::auth::authorize_request(&jwt_1, &db).await.is_err());
+        assert!(services::auth::authorize_request(&jwt_2, &db).await.is_err());
     }
 
     async fn access_token_from_body(resp: ServiceResponse) -> String {
@@ -348,7 +352,7 @@ mod tests {
         json["access_token"].as_str().unwrap().to_string()
     }
 
-    async fn run_with_db(f: fn(Surreal<Any>) -> ()) {
+    async fn run_with_db(f: fn(Surreal<Any>) -> dyn Future<Output = ()>) {
         let db = any::connect("mem://").await.unwrap();
         f(db);
     }

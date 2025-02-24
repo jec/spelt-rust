@@ -34,6 +34,7 @@ mod tests {
     use actix_web::web::Bytes;
     use actix_web::{test, App};
     use std::collections::HashSet;
+    use surrealdb::engine::any;
 
     #[actix_web::test]
     async fn test_get_versions() {
@@ -49,11 +50,12 @@ mod tests {
     #[actix_web::test]
     async fn test_get_server_names() {
         let conf = Config::test();
+        let db = any::connect("mem://").await.unwrap();
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(AppState {
                     config: conf.clone(),
-                    db_pool: None,
+                    db: db,
                 }))
                 .service(server_names)
         ).await;

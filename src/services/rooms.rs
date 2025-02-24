@@ -1,12 +1,15 @@
 use crate::error::Error;
 use crate::routes::rooms::CreateRoomRequest;
-use crate::store::pg;
-use crate::store::pg::events::CreateRoomEvent;
 use crate::{store, AppState};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use surrealdb::RecordId;
 use twelf::reexports::{log, serde_json};
 use uuid::Uuid;
+
+#[derive(Debug, Serialize)]
+pub struct CreateRoomEvent {
+    pub r#type: String,
+}
 
 impl From<CreateRoomRequest> for CreateRoomEvent {
     fn from(request: CreateRoomRequest) -> Self {
@@ -17,9 +20,9 @@ impl From<CreateRoomRequest> for CreateRoomEvent {
 }
 
 /// Creates a new Room and returns `Ok(room_id)`
-pub async fn create_room(request: CreateRoomRequest, user_id: i64, state: &AppState) -> Result<String, Error> {
-    let pool = state.db_pool.as_ref().unwrap();
-    let user = pg::auth::get_user(user_id, &pool).await?;
+pub async fn create_room(request: CreateRoomRequest, user_id: &RecordId, state: &AppState) -> Result<String, Error> {
+    let db = state.db.clone();
+    let user = store::auth::get_user(user_id, &db).await?;
 
     if user.is_none() {
         log::error!("Authenticated user with ID {} not found", user_id);
@@ -28,10 +31,10 @@ pub async fn create_room(request: CreateRoomRequest, user_id: i64, state: &AppSt
 
     let base_url = state.config.server.base_url.clone();
     let name = format!("!{}:{}", Uuid::new_v4(), base_url);
-    pg::rooms::create_room(&name, &pool).await?;
+    store::rooms::create_room(&name, &db).await?;
 
-    let event = pg::events::CreateRoomEvent::from(request);
+    let event = CreateRoomEvent::from(request);
 
-    pg::events::create_event(&event.r#type, &event, &pool).await?;
+    store::events::create_event(&event.r#type, &event, &db).await?;
     Ok(name)
 }

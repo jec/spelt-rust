@@ -1,9 +1,9 @@
+use crate::store;
 use clap::Parser;
 use futures_util::TryStreamExt;
 use std::io::Write;
-use surrealdb::engine::remote::ws::Client;
+use surrealdb::engine::any::Any;
 use surrealdb::Surreal;
-use crate::store;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -19,7 +19,7 @@ pub fn parse() -> Args {
     Args::parse()
 }
 
-pub async fn run_command(args: &Args, db: &Surreal<Client>) {
+pub async fn run_command(args: &Args, db: &Surreal<Any>) {
     match &args.command {
         Some(s) if s == "users" => run_users_command(&args, db).await,
         Some(s) => eprintln!("Invalid command: {}", s),
@@ -27,7 +27,7 @@ pub async fn run_command(args: &Args, db: &Surreal<Client>) {
     }
 }
 
-pub async fn run_users_command(args: &Args, db: &Surreal<Client>) {
+pub async fn run_users_command(args: &Args, db: &Surreal<Any>) {
     match &args.subcommand {
         Some(s) if s == "list" => list_users(db).await,
         Some(s) if s == "create" => create_user(args, db).await,
@@ -36,7 +36,7 @@ pub async fn run_users_command(args: &Args, db: &Surreal<Client>) {
     }
 }
 
-pub async fn list_users(db: &Surreal<Client>) -> () {
+pub async fn list_users(db: &Surreal<Any>) -> () {
     let mut stream = store::auth::users_stream(db).await;
     let mut has_users = false;
 
@@ -56,7 +56,7 @@ pub async fn list_users(db: &Surreal<Client>) -> () {
     ()
 }
 
-pub async fn create_user(args: &Args, db: &Surreal<Client>) {
+pub async fn create_user(args: &Args, db: &Surreal<Any>) {
     if args.args.len() != 2 {
         eprintln!("`users create` requires 2 arguments: username and email");
         return;

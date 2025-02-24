@@ -46,7 +46,7 @@ async fn create_room(
     creation_request: web::Json<CreateRoomRequest>,
     state: web::Data<AppState>
 ) -> impl Responder {
-    match services::rooms::create_room(creation_request.into_inner(), auth.user_id, state.as_ref()).await {
+    match services::rooms::create_room(creation_request.into_inner(), &auth.user_id, state.as_ref()).await {
         Ok(room_id) =>
             HttpResponse::Ok().json(CreateRoomSuccess { room_id }),
         Err(err) =>

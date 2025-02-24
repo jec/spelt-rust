@@ -53,7 +53,7 @@ async fn main() -> Result<(), error::Error> {
         username: conf.database.dev.username.as_str(),
         password: conf.database.dev.password.as_str()
     }).await?;
-    db.use_db(conf.database.dev.database_name).await?;
+    db.use_db(&conf.database.dev.database_name).await?;
 
     // If command is given, run it and exit.
     if args.command.is_some() {

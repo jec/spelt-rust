@@ -1,7 +1,8 @@
-use actix_web::{FromRequest, HttpMessage, HttpRequest};
-use futures_util::future::{err, ok, Ready};
 use crate::error;
 use crate::models::auth::Session;
+use actix_web::{FromRequest, HttpMessage, HttpRequest};
+use futures_util::future::{err, ok, Ready};
+use surrealdb::RecordId;
 
 /// An Actix extractor that retrieves the current authenticated User ID and
 /// Session ID
@@ -30,8 +31,8 @@ use crate::models::auth::Session;
 ///
 /// [`authenticator()`]: crate::middleware::auth::authenticator
 pub struct AuthenticatedUser {
-    pub user_id: i64,
-    pub session_id: i64,
+    pub user_id: RecordId,
+    pub session_id: RecordId,
 }
 
 impl FromRequest for AuthenticatedUser {
@@ -43,8 +44,9 @@ impl FromRequest for AuthenticatedUser {
         match extensions.get::<Session>() {
             Some(session) =>
                 ok(Self {
-                    user_id: session.user_id,
-                    session_id: session.id,
+                    // TODO: Implement these.
+                    user_id: RecordId::from_table_key("user", "one"), // session.user_id,
+                    session_id: RecordId::from_table_key("session", "one"), // session.id,
                 }),
             None =>
                 err(error::Error::Auth(String::from("Request not authenticated"))),

@@ -65,13 +65,6 @@ impl From<std::io::Error> for Error {
     }
 }
 
-impl From<sqlx::Error> for Error {
-    fn from(error: sqlx::Error) -> Self {
-        eprintln!("{error}");
-        Self::Db(error.to_string())
-    }
-}
-
 impl From<surrealdb::Error> for Error {
     fn from(error: surrealdb::Error) -> Self {
         eprintln!("{error}");
