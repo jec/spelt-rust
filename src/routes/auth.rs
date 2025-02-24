@@ -134,7 +134,6 @@ async fn log_out_all(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl
 
 #[cfg(test)]
 mod tests {
-    use std::future::Future;
     use super::*;
     use crate::config::Config;
     use crate::{middleware, services, store};
@@ -144,6 +143,7 @@ mod tests {
     use actix_web::middleware::from_fn;
     use actix_web::web;
     use actix_web::{test, App};
+    use std::future::Future;
     use surrealdb::engine::any;
     use surrealdb::engine::any::Any;
     use surrealdb::Surreal;
@@ -178,56 +178,62 @@ mod tests {
         user: String,
     }
 
+    #[test]
     async fn test_log_in() {
-        run_with_db(async |db| {
-            let (user, password) = store::auth::tests::create_test_user(&db).await;
-            let payload = RequestWithIdentifier {
-                r#type: "m.login.password".to_string(),
-                identifier: RequestIdentifier {
-                    r#type: String::from("m.id.user"),
-                    user: user.name,
-                },
-                password
-            };
-
-            let state = AppState { config: Config::test(), db: db.clone() };
-            let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
-
-            let req = test::TestRequest::post()
-                .uri("/_matrix/client/v3/login")
-                .set_json(payload)
-                .to_request();
-            let resp = test::call_service(&app, req).await;
-            assert!(resp.status().is_success());
-
-            let jwt = access_token_from_body(resp).await;
-            assert!(services::auth::authorize_request(&jwt, &db).await.is_ok());
-        }.await).await;
+        run_with_db(test_log_in_impl).await;
     }
 
+    async fn test_log_in_impl(db: Surreal<Any>) {
+        let (user, password) = store::auth::tests::create_test_user(&db).await;
+        let payload = RequestWithIdentifier {
+            r#type: "m.login.password".to_string(),
+            identifier: RequestIdentifier {
+                r#type: String::from("m.id.user"),
+                user: user.name,
+            },
+            password
+        };
+
+        let state = AppState { config: Config::test(), db: db.clone() };
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
+
+        let req = test::TestRequest::post()
+            .uri("/_matrix/client/v3/login")
+            .set_json(payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+
+        let jwt = access_token_from_body(resp).await;
+        assert!(services::auth::authorize_request(&jwt, &db).await.is_ok());
+    }
+
+    #[test]
     async fn test_log_in_with_bad_password() {
-        run_with_db(async |db| {
-            let (user, _password) = store::auth::tests::create_test_user(&db).await;
-            let payload = RequestWithIdentifier {
-                r#type: "m.login.password".to_string(),
-                identifier: RequestIdentifier {
-                    r#type: String::from("m.id.user"),
-                    user: user.name,
-                },
-                password: String::from("foobar"),
-            };
+        run_with_db(test_log_in_with_bad_password_impl).await
+    }
 
-            let state = AppState { config: Config::test(), db: db.clone() };
-            let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
+    async fn test_log_in_with_bad_password_impl(db: Surreal<Any>) {
+        let (user, _password) = store::auth::tests::create_test_user(&db).await;
+        let payload = RequestWithIdentifier {
+            r#type: "m.login.password".to_string(),
+            identifier: RequestIdentifier {
+                r#type: String::from("m.id.user"),
+                user: user.name,
+            },
+            password: String::from("foobar"),
+        };
 
-            let req = test::TestRequest::post()
-                .uri("/_matrix/client/v3/login")
-                .set_json(payload)
-                .to_request();
-            let resp = test::call_service(&app, req).await;
+        let state = AppState { config: Config::test(), db: db.clone() };
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
 
-            assert_eq!(resp.status(), StatusCode::FORBIDDEN);
-        }.await).await;
+        let req = test::TestRequest::post()
+            .uri("/_matrix/client/v3/login")
+            .set_json(payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
     }
 
     #[derive(Serialize)]
@@ -237,28 +243,31 @@ mod tests {
         password: String,
     }
 
+    #[test]
     async fn test_log_in_with_user() {
-        run_with_db(async |db| {
-            let (user, password) = store::auth::tests::create_test_user(&db).await;
-            let payload = RequestWithUser {
-                r#type: "m.login.password".to_string(),
-                user: user.name,
-                password
-            };
+        run_with_db(test_log_in_with_user_impl).await;
+    }
 
-            let state = AppState { config: Config::test(), db: db.clone() };
-            let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
+    async fn test_log_in_with_user_impl(db: Surreal<Any>) {
+        let (user, password) = store::auth::tests::create_test_user(&db).await;
+        let payload = RequestWithUser {
+            r#type: "m.login.password".to_string(),
+            user: user.name,
+            password
+        };
 
-            let req = test::TestRequest::post()
-                .uri("/_matrix/client/v3/login")
-                .set_json(payload)
-                .to_request();
-            let resp = test::call_service(&app, req).await;
-            assert!(resp.status().is_success());
+        let state = AppState { config: Config::test(), db: db.clone() };
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
 
-            let jwt = access_token_from_body(resp).await;
-            assert!(services::auth::authorize_request(&jwt, &db).await.is_ok());
-        }.await).await;
+        let req = test::TestRequest::post()
+            .uri("/_matrix/client/v3/login")
+            .set_json(payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+
+        let jwt = access_token_from_body(resp).await;
+        assert!(services::auth::authorize_request(&jwt, &db).await.is_ok());
     }
 
     #[derive(Serialize)]
@@ -268,52 +277,58 @@ mod tests {
         password: String,
     }
 
+    #[test]
     async fn test_log_in_with_address() {
-        run_with_db(async |db| {
-            let (user, password) = store::auth::tests::create_test_user(&db).await;
-            let payload = RequestWithAddress {
-                r#type: "m.login.password".to_string(),
-                address: user.name,
-                password
-            };
-
-            let state = AppState { config: Config::test(), db: db.clone() };
-            let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
-
-            let req = test::TestRequest::post()
-                .uri("/_matrix/client/v3/login")
-                .set_json(payload)
-                .to_request();
-            let resp = test::call_service(&app, req).await;
-            assert!(resp.status().is_success());
-
-            let jwt = access_token_from_body(resp).await;
-            assert!(services::auth::authorize_request(&jwt, &db).await.is_ok());
-        }.await).await;
+        run_with_db(test_log_in_with_address_impl).await;
     }
 
+    async fn test_log_in_with_address_impl(db: Surreal<Any>) {
+        let (user, password) = store::auth::tests::create_test_user(&db).await;
+        let payload = RequestWithAddress {
+            r#type: "m.login.password".to_string(),
+            address: user.name,
+            password
+        };
+
+        let state = AppState { config: Config::test(), db: db.clone() };
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(log_in)).await;
+
+        let req = test::TestRequest::post()
+            .uri("/_matrix/client/v3/login")
+            .set_json(payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+
+        let jwt = access_token_from_body(resp).await;
+        assert!(services::auth::authorize_request(&jwt, &db).await.is_ok());
+    }
+
+    #[test]
     async fn test_log_out() {
-        run_with_db(async |db| {
-            let (user, _password) = store::auth::tests::create_test_user(&db).await;
-            let (_session, jwt) = store::auth::tests::create_test_session(&user.id, 0, &db).await;
+        run_with_db(test_log_out_impl).await
+    }
 
-            let state = AppState { config: Config::test(), db: db.clone() };
-            let app = test::init_service(
-                App::new()
-                    .wrap(from_fn(middleware::auth::authenticator))
-                    .app_data(web::Data::new(state))
-                    .service(log_out)
-            ).await;
+    async fn test_log_out_impl(db: Surreal<Any>) {
+        let (user, _password) = store::auth::tests::create_test_user(&db).await;
+        let (_session, jwt) = store::auth::tests::create_test_session(&user.id, 0, &db).await;
 
-            let req = test::TestRequest::post()
-                .uri("/_matrix/client/v3/logout")
-                .append_header(("Authorization", format!("Bearer {}", jwt)))
-                .to_request();
-            let resp = test::call_service(&app, req).await;
+        let state = AppState { config: Config::test(), db: db.clone() };
+        let app = test::init_service(
+            App::new()
+                .wrap(from_fn(middleware::auth::authenticator))
+                .app_data(web::Data::new(state))
+                .service(log_out)
+        ).await;
 
-            assert!(resp.status().is_success());
-            assert!(services::auth::authorize_request(&jwt, &db).await.is_err());
-        }.await).await;
+        let req = test::TestRequest::post()
+            .uri("/_matrix/client/v3/logout")
+            .append_header(("Authorization", format!("Bearer {}", jwt)))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
+        assert!(services::auth::authorize_request(&jwt, &db).await.is_err());
     }
 
     #[test]
@@ -352,8 +367,12 @@ mod tests {
         json["access_token"].as_str().unwrap().to_string()
     }
 
-    async fn run_with_db(f: fn(Surreal<Any>) -> dyn Future<Output = ()>) {
+    async fn run_with_db<F, Fut>(f: F)
+    where
+        F: FnOnce(Surreal<Any>) -> Fut,
+        Fut: Future<Output = ()>,
+    {
         let db = any::connect("mem://").await.unwrap();
-        f(db);
+        f(db).await;
     }
 }

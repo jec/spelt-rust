@@ -37,17 +37,17 @@ pub async fn run_users_command(args: &Args, db: &Surreal<Any>) {
 }
 
 pub async fn list_users(db: &Surreal<Any>) -> () {
-    let mut stream = store::auth::users_stream(db).await;
+    let mut users = store::auth::users_stream(db).await.unwrap();
     let mut has_users = false;
 
-    while let Ok(Some(user)) = stream.try_next().await {
+    users.iter().for_each(|user| {
         if !has_users {
             println!("{:20}  {:40}", "Name", "Email");
             println!("{}  {}", "-".repeat(20), "-".repeat(40));
         }
         println!("{:20}  {:40}", user.name, user.email);
         has_users = true;
-    }
+    });
 
     if !has_users {
         println!("No users found.");

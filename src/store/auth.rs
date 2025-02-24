@@ -31,15 +31,15 @@ pub async fn create_user(
     password: &String,
     db: &Surreal<Any>
 ) -> Result<(), Error> {
-    let _ = db.create("user")
-        .content(NewUser {
-            name,
-            email,
-            encrypted_password: &"foo".to_string(),
-            created_at: chrono::Utc::now(),
-            updated_at: chrono::Utc::now(),
-        })
-        .await?;
+    // let _ = db.create("user")
+    //     .content(NewUser {
+    //         name,
+    //         email,
+    //         encrypted_password: &"foo".to_string(),
+    //         created_at: chrono::Utc::now(),
+    //         updated_at: chrono::Utc::now(),
+    //     })
+    //     .await?;
 
     Ok(())
 }

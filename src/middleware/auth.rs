@@ -31,22 +31,21 @@ pub async fn authenticator(req: ServiceRequest, next: Next<impl MessageBody>) ->
                 log::info!("Bearer token found");
 
                 if let Some(state) = req.app_data::<Data<AppState>>() {
-                    if let Some(pool) = state.db_pool.as_ref() {
-                        match services::auth::authorize_request(&token.to_string(), pool).await {
-                            Ok(session) => {
-                                log::info!(
-                                    "Authenticated user {} with session {} on device {}",
-                                    session.user_id,
-                                    session.id,
-                                    session.device_identifier
-                                );
+                    let db = state.db.clone();
+                    match services::auth::authorize_request(&token.to_string(), &db).await {
+                        Ok(session) => {
+                            log::info!(
+                                "Authenticated user {} with session {} on device {}",
+                                session.user_id,
+                                session.id,
+                                session.device_identifier
+                            );
 
-                                let mut extensions = req.extensions_mut();
-                                extensions.insert(session);
-                            },
-                            Err(err) =>
-                                log::info!("{}", err.to_string()),
-                        }
+                            let mut extensions = req.extensions_mut();
+                            extensions.insert(session);
+                        },
+                        Err(err) =>
+                            log::info!("{}", err.to_string()),
                     }
                 }
             }
