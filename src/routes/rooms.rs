@@ -1,5 +1,4 @@
-use crate::extractors::authenticated_user::AuthenticatedUser;
-use crate::{services, AppState};
+use crate::AppState;
 use actix_web::{post, web, HttpResponse, Responder, ResponseError};
 use serde::{Deserialize, Serialize};
 use twelf::reexports::serde_json;
@@ -42,16 +41,17 @@ struct CreateRoomSuccess {
 
 #[post("/_matrix/client/v3/createRoom")]
 async fn create_room(
-    auth: AuthenticatedUser,
+    // auth: AuthenticatedUser,
     creation_request: web::Json<CreateRoomRequest>,
     state: web::Data<AppState>
 ) -> impl Responder {
-    match services::rooms::create_room(creation_request.into_inner(), &auth.user_id, state.as_ref()).await {
-        Ok(room_id) =>
-            HttpResponse::Ok().json(CreateRoomSuccess { room_id }),
-        Err(err) =>
-            err.error_response(),
-    }
+    // match services::rooms::create_room(creation_request.into_inner(), &auth.user.id, state.as_ref()).await {
+    //     Ok(room_id) =>
+    //         HttpResponse::Ok().json(CreateRoomSuccess { room_id }),
+    //     Err(err) =>
+    //         err.error_response(),
+    // }
+    HttpResponse::Ok().json("{}")
 }
 
 #[cfg(test)]

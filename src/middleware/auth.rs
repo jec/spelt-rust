@@ -1,10 +1,10 @@
+use crate::{services, AppState};
 use actix_web::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
-use actix_web::{Error, HttpMessage};
 use actix_web::middleware::Next;
 use actix_web::web::Data;
+use actix_web::{Error, HttpMessage};
 use twelf::reexports::log;
-use crate::{services, AppState};
 
 /// Authenticates the request using the Bearer token, if any
 ///
@@ -33,15 +33,16 @@ pub async fn authenticator(req: ServiceRequest, next: Next<impl MessageBody>) ->
                 if let Some(state) = req.app_data::<Data<AppState>>() {
                     let db = state.db.clone();
                     match services::auth::authorize_request(&token.to_string(), &db).await {
-                        Ok(session) => {
+                        Ok((user, session)) => {
                             log::info!(
                                 "Authenticated user {} with session {} on device {}",
-                                session.user_id,
-                                session.id,
-                                session.device_identifier
+                                &user.id.to_string(),
+                                &session.id.to_string(),
+                                &session.device_identifier
                             );
 
                             let mut extensions = req.extensions_mut();
+                            extensions.insert(user);
                             extensions.insert(session);
                         },
                         Err(err) =>

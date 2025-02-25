@@ -1,8 +1,7 @@
 use crate::error;
-use crate::models::auth::Session;
+use crate::models::auth::{Session, User};
 use actix_web::{FromRequest, HttpMessage, HttpRequest};
 use futures_util::future::{err, ok, Ready};
-use surrealdb::RecordId;
 
 /// An Actix extractor that retrieves the current authenticated User ID and
 /// Session ID
@@ -30,26 +29,27 @@ use surrealdb::RecordId;
 /// ```
 ///
 /// [`authenticator()`]: crate::middleware::auth::authenticator
-pub struct AuthenticatedUser {
-    pub user_id: RecordId,
-    pub session_id: RecordId,
+pub struct AuthenticatedUser<'a> {
+    pub user: &'a User,
+    pub session: &'a Session,
 }
 
-impl FromRequest for AuthenticatedUser {
+impl<'a> FromRequest for AuthenticatedUser<'a> {
     type Error = error::Error;
     type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
         let extensions = req.extensions();
-        match extensions.get::<Session>() {
-            Some(session) =>
-                ok(Self {
-                    // TODO: Implement these.
-                    user_id: RecordId::from_table_key("user", "one"), // session.user_id,
-                    session_id: RecordId::from_table_key("session", "one"), // session.id,
-                }),
-            None =>
-                err(error::Error::Auth(String::from("Request not authenticated"))),
+        let user = extensions.get::<User>();
+        let session = extensions.get::<Session>();
+
+        if user.is_none() | session.is_none() {
+            return err(error::Error::Auth(String::from("Request not authenticated")));
         }
+
+        ok(Self {
+            user: user.unwrap(),
+            session: session.unwrap()
+        })
     }
 }

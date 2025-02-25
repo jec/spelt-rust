@@ -111,7 +111,7 @@ async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState
 async fn log_out(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Responder {
     let db = &data.db;
 
-    match services::auth::log_out(&auth.session_id, db).await {
+    match services::auth::log_out(&auth.session.id, db).await {
         Ok(_) =>
             HttpResponse::Ok().json("{}"),
         Err(err) => err.error_response()
@@ -125,7 +125,7 @@ async fn log_out(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Res
 async fn log_out_all(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Responder {
     let db = &data.db;
 
-    match services::auth::log_out_all(&auth.user_id, db).await {
+    match services::auth::log_out_all(&auth.user.id, db).await {
         Ok(_) =>
             HttpResponse::Ok().json("{}"),
         Err(err) => err.error_response()
@@ -136,6 +136,7 @@ async fn log_out_all(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl
 mod tests {
     use super::*;
     use crate::config::Config;
+    use crate::models::auth::Session;
     use crate::{middleware, services, store};
     use actix_web::body::to_bytes;
     use actix_web::dev::ServiceResponse;
@@ -352,6 +353,9 @@ mod tests {
             .append_header(("Authorization", format!("Bearer {}", jwt_1)))
             .to_request();
         let resp = test::call_service(&app, req).await;
+
+        let ss: Vec<Session> = db.query("SELECT * FROM session").await.unwrap().take(0).unwrap();
+        dbg!(ss);
 
         assert!(resp.status().is_success());
         assert!(services::auth::authorize_request(&jwt_1, &db).await.is_err());

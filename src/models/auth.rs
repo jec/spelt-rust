@@ -20,7 +20,6 @@ pub struct Session {
     pub uuid: Uuid,
     pub device_identifier: String,
     pub device_name: Option<String>,
-    pub user_id: i64,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }

@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::models::auth::Session;
+use crate::models::auth::{Session, User};
 use crate::routes::auth::LoginRequest;
 use crate::services;
 use crate::store;
@@ -92,7 +92,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db: &Surreal<Any>) -
 
 /// Validates the JWT signature and validates the referenced `Session`; returns
 /// `Ok(s: Session)` on success
-pub async fn authorize_request(access_token: &String, db: &Surreal<Any>) -> Result<Session, Error> {
+pub async fn authorize_request(access_token: &String, db: &Surreal<Any>) -> Result<(User, Session), Error> {
     let claims = services::jwt::validate_jwt(&access_token)?;
     let uuid = claims.sub;
 
