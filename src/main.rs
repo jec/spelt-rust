@@ -21,6 +21,7 @@ mod models;
 mod routes;
 mod services;
 mod store;
+mod test;
 
 #[derive(Debug)]
 struct AppState {

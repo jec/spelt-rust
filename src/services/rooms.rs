@@ -22,7 +22,7 @@ impl From<CreateRoomRequest> for CreateRoomEvent {
 /// Creates a new Room and returns `Ok(room_id)`
 pub async fn create_room(request: CreateRoomRequest, user_id: &RecordId, state: &AppState) -> Result<String, Error> {
     let db = state.db.clone();
-    let user = store::auth::get_user(user_id, &db).await?;
+    let user = store::auth::get_user_by_record_id(user_id, &db).await?;
 
     if user.is_none() {
         log::error!("Authenticated user with ID {} not found", user_id);

@@ -143,8 +143,6 @@ mod tests {
     use actix_web::middleware::from_fn;
     use actix_web::web;
     use actix_web::{test, App};
-    use std::future::Future;
-    use surrealdb::engine::any;
     use surrealdb::engine::any::Any;
     use surrealdb::Surreal;
     use twelf::reexports::serde_json;
@@ -180,7 +178,7 @@ mod tests {
 
     #[test]
     async fn test_log_in() {
-        run_with_db(test_log_in_impl).await;
+        crate::test::run_with_db(test_log_in_impl).await;
     }
 
     async fn test_log_in_impl(db: Surreal<Any>) {
@@ -210,7 +208,7 @@ mod tests {
 
     #[test]
     async fn test_log_in_with_bad_password() {
-        run_with_db(test_log_in_with_bad_password_impl).await
+        crate::test::run_with_db(test_log_in_with_bad_password_impl).await
     }
 
     async fn test_log_in_with_bad_password_impl(db: Surreal<Any>) {
@@ -245,7 +243,7 @@ mod tests {
 
     #[test]
     async fn test_log_in_with_user() {
-        run_with_db(test_log_in_with_user_impl).await;
+        crate::test::run_with_db(test_log_in_with_user_impl).await;
     }
 
     async fn test_log_in_with_user_impl(db: Surreal<Any>) {
@@ -279,7 +277,7 @@ mod tests {
 
     #[test]
     async fn test_log_in_with_address() {
-        run_with_db(test_log_in_with_address_impl).await;
+        crate::test::run_with_db(test_log_in_with_address_impl).await;
     }
 
     async fn test_log_in_with_address_impl(db: Surreal<Any>) {
@@ -306,7 +304,7 @@ mod tests {
 
     #[test]
     async fn test_log_out() {
-        run_with_db(test_log_out_impl).await
+        crate::test::run_with_db(test_log_out_impl).await
     }
 
     async fn test_log_out_impl(db: Surreal<Any>) {
@@ -333,7 +331,7 @@ mod tests {
 
     #[test]
     async fn test_log_out_all() {
-        run_with_db(test_log_out_all_impl).await;
+        crate::test::run_with_db(test_log_out_all_impl).await;
     }
 
     async fn test_log_out_all_impl(db: Surreal<Any>) {
@@ -365,14 +363,5 @@ mod tests {
         let body = std::str::from_utf8(&body_bytes).unwrap();
         let json: serde_json::Value = serde_json::from_str(body).unwrap();
         json["access_token"].as_str().unwrap().to_string()
-    }
-
-    async fn run_with_db<F, Fut>(f: F)
-    where
-        F: FnOnce(Surreal<Any>) -> Fut,
-        Fut: Future<Output = ()>,
-    {
-        let db = any::connect("mem://").await.unwrap();
-        f(db).await;
     }
 }
