@@ -29,12 +29,13 @@ use futures_util::future::{err, ok, Ready};
 /// ```
 ///
 /// [`authenticator()`]: crate::middleware::auth::authenticator
-pub struct AuthenticatedUser<'a> {
-    pub user: &'a User,
-    pub session: &'a Session,
+#[derive(Clone)]
+pub struct AuthenticatedUser {
+    pub user: User,
+    pub session: Session,
 }
 
-impl<'a> FromRequest for AuthenticatedUser<'a> {
+impl FromRequest for AuthenticatedUser {
     type Error = error::Error;
     type Future = Ready<Result<Self, Self::Error>>;
 
@@ -48,8 +49,9 @@ impl<'a> FromRequest for AuthenticatedUser<'a> {
         }
 
         ok(Self {
-            user: user.unwrap(),
-            session: session.unwrap()
+            // TODO: Not great to be copying these structs on every authenticated request.
+            user: user.unwrap().clone(),
+            session: session.unwrap().clone()
         })
     }
 }

@@ -3,7 +3,7 @@ use surrealdb::RecordId;
 use uuid::Uuid;
 
 /// Model for database `user` node
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct User {
     pub id: RecordId,
     pub name: String,
@@ -14,7 +14,7 @@ pub struct User {
 }
 
 /// Model for database `session` node
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Session {
     pub id: RecordId,
     pub uuid: Uuid,

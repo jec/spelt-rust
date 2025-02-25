@@ -35,7 +35,7 @@ pub async fn authenticator(req: ServiceRequest, next: Next<impl MessageBody>) ->
                     match services::auth::authorize_request(&token.to_string(), &db).await {
                         Ok((user, session)) => {
                             log::info!(
-                                "Authenticated user {} with session {} on device {}",
+                                "Authenticated {} with {} on device {}",
                                 &user.id.to_string(),
                                 &session.id.to_string(),
                                 &session.device_identifier

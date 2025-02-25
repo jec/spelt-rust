@@ -112,8 +112,7 @@ async fn log_out(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl Res
     let db = &data.db;
 
     match services::auth::log_out(&auth.session.id, db).await {
-        Ok(_) =>
-            HttpResponse::Ok().json("{}"),
+        Ok(_) => HttpResponse::Ok().json("{}"),
         Err(err) => err.error_response()
     }
 }
@@ -126,8 +125,7 @@ async fn log_out_all(auth: AuthenticatedUser, data: web::Data<AppState>) -> impl
     let db = &data.db;
 
     match services::auth::log_out_all(&auth.user.id, db).await {
-        Ok(_) =>
-            HttpResponse::Ok().json("{}"),
+        Ok(_) => HttpResponse::Ok().json("{}"),
         Err(err) => err.error_response()
     }
 }
