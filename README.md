@@ -24,7 +24,7 @@ the relevant components of the specification:
 
 Spelt is implemented in [Rust](https://www.rust-lang.org/) using
 [Actix](https://actix.rs/) as the web app framework and
-[PostgreSQL](https://postgresql.org/) as the database.
+[SurrealDB](https://surrealdb.com/) as the database.
 
 ## Setup
 
@@ -47,7 +47,7 @@ Spelt is implemented in [Rust](https://www.rust-lang.org/) using
 
 ## License
 
-Spelt is licensed under the three-clause BSD license. See LICENSE.txt.
+Spelt is licensed under the three-clause BSD license. See [LICENSE.txt](LICENSE.txt).
 
 ## To Do
 
