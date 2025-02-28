@@ -12,7 +12,7 @@ env_logger = "0.11.6"
 faker_rand = "0.1.1"
 futures-util = "0.3.31"
 jsonwebtoken = "9.3.1"
-rand = { version = "0.8.5", features = ["small_rng"] }
+rand = { version = "0.9.0", features = ["small_rng"] }
 serde = {  version = "1.0.217", features = ["derive"] }
 sqlx = { version = "0.8.3", features = ["runtime-tokio", "tls-native-tls", "postgres", "derive", "macros", "migrate", "uuid", "chrono", "json", "bigdecimal"] }
 thiserror = "2.0.11"
