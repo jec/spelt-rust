@@ -7,7 +7,7 @@ edition = "2021"
 actix-web = "4.9.0"
 argon2 = "0.5.3"
 chrono = "0.4.39"
-clap = { version = "4.5.28", features = ["derive"] }
+clap = { version = "4.5.31", features = ["derive"] }
 env_logger = "0.11.6"
 faker_rand = "0.1.1"
 futures-util = "0.3.31"
