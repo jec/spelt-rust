@@ -58,7 +58,7 @@ async fn main() -> Result<(), error::Error> {
 
     // If command is given, run it and exit.
     if args.command.is_some() {
-        cli::run_command(&args, &db).await;
+        cli::run_command(&args, &conf, &db).await;
         return Ok(());
     }
 

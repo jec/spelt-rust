@@ -1,6 +1,6 @@
-use crate::store;
+use crate::config::Config;
+use crate::{services, store};
 use clap::Parser;
-use futures_util::TryStreamExt;
 use std::io::Write;
 use surrealdb::engine::any::Any;
 use surrealdb::Surreal;
@@ -19,18 +19,18 @@ pub fn parse() -> Args {
     Args::parse()
 }
 
-pub async fn run_command(args: &Args, db: &Surreal<Any>) {
+pub async fn run_command(args: &Args, config: &Config, db: &Surreal<Any>) {
     match &args.command {
-        Some(s) if s == "users" => run_users_command(&args, db).await,
+        Some(s) if s == "users" => run_users_command(&args, config, db).await,
         Some(s) => eprintln!("Invalid command: {}", s),
         None => (),
     }
 }
 
-pub async fn run_users_command(args: &Args, db: &Surreal<Any>) {
+pub async fn run_users_command(args: &Args, config: &Config, db: &Surreal<Any>) {
     match &args.subcommand {
         Some(s) if s == "list" => list_users(db).await,
-        Some(s) if s == "create" => create_user(args, db).await,
+        Some(s) if s == "create" => create_user(args, config, db).await,
         Some(s) => eprintln!("Invalid `users` subcommand: {}", s),
         None => (),
     }
@@ -56,15 +56,24 @@ pub async fn list_users(db: &Surreal<Any>) -> () {
     ()
 }
 
-pub async fn create_user(args: &Args, db: &Surreal<Any>) {
+pub async fn create_user(args: &Args, config: &Config, db: &Surreal<Any>) {
     if args.args.len() != 2 {
         eprintln!("`users create` requires 2 arguments: username and email");
-        return;
+        std::process::exit(1);
+    }
+
+    let username = args.args.get(0).unwrap().trim().to_lowercase();
+    let email = args.args.get(1).unwrap().trim().to_lowercase();
+
+    if let Err(msg) = services::auth::validate_username(&username, config) {
+        eprintln!("User creation failed: {}", msg);
+        std::process::exit(2);
     }
 
     let mut password0 = String::new();
     let mut password1 = String::new();
 
+    // TODO: Turn off echo.
     print!("Enter password: ");
     std::io::stdout().flush().unwrap();
     std::io::stdin().read_line(&mut password0).expect("Failed to read input.");
@@ -81,8 +90,8 @@ pub async fn create_user(args: &Args, db: &Surreal<Any>) {
     }
 
     match store::auth::create_user(
-        args.args.get(0).unwrap(),
-        args.args.get(1).unwrap(),
+        &username,
+        &email,
         &password0,
         &db
     ).await {
