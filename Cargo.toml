@@ -20,3 +20,4 @@ tokio = "1.43.0"
 toml = "0.8.20"
 twelf = { version = "0.15.0", default-features = false, features = ["toml"] }
 uuid = { version = "1.12.1", features = ["v4", "fast-rng"] }
+regex = "1.11.1"

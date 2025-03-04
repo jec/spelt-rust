@@ -3908,6 +3908,7 @@ dependencies = [
  "futures-util",
  "jsonwebtoken",
  "rand 0.8.5",
+ "regex",
  "serde",
  "surrealdb",
  "thiserror 2.0.11",

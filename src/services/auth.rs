@@ -1,12 +1,15 @@
+use crate::config::Config;
 use crate::error::Error;
 use crate::models::auth::{Session, User};
 use crate::routes::auth::LoginRequest;
 use crate::services;
 use crate::store;
 use actix_web::web;
+use regex::Regex;
 use surrealdb::engine::any::Any;
 use surrealdb::{RecordId, Surreal};
-use crate::config::Config;
+
+const MAX_NAME_LENGTH: usize = 255;
 
 /// Possible results of calling [`log_in()`]
 pub enum LoginResult {
@@ -19,6 +22,27 @@ pub enum LoginResult {
 /// Returns the fully qualified Matrix ID (MXID) as in `@name:domain`
 pub fn mxid(username: &String, config: &Config) -> String {
     format!("@{}:{}", username, config.server.homeserver_name)
+}
+
+/// Validates the `name` part of `@name:domain` according to Matrix spec
+///
+/// See https://spec.matrix.org/v1.13/appendices/#user-identifiers
+pub fn validate_username(username: &String, config: &Config) -> Result<(), String> {
+    if username.is_empty() {
+        return Err("Username cannot be empty.".to_string());
+    }
+
+    // Accommodate the `@` and the `:` and the homeserver name.
+    if username.len() > MAX_NAME_LENGTH - config.server.homeserver_name.len() - 2 {
+        return Err(format!("Length of fully qualified user ID cannot exceed {}.", MAX_NAME_LENGTH));
+    }
+
+    let pattern = Regex::new(r"^[-a-z0-9._+=/]+$").unwrap();
+    if !pattern.is_match(&username) {
+        return Err("Username contains disallowed characters.".to_string());
+    }
+
+    Ok(())
 }
 
 /// Authenticates a user and, if successful, returns a `LoginResult` with a token
@@ -121,6 +145,30 @@ mod tests {
     use crate::services;
     use crate::store::auth::invalidate_existing_sessions;
     use crate::store::auth::tests::{create_test_session, create_test_user};
+
+    #[test]
+    fn test_validate_username() {
+        let config = Config::test();
+        assert_eq!(validate_username(&"user-name".to_string(), &config), Ok(()))
+    }
+
+    #[test]
+    fn test_validate_username_with_empty() {
+        let config = Config::test();
+        assert!(match validate_username(&"".to_string(), &config) {
+            Err(msg) => msg.contains("empty"),
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_validate_username_with_bad_char() {
+        let config = Config::test();
+        assert!(match validate_username(&"bad*name".to_string(), &config) {
+            Err(msg) => msg.contains("disallowed characters"),
+            _ => false,
+        });
+    }
 
     async fn test_authorize_request (db: &Surreal<Any>) {
         let (user, _password) = create_test_user(db).await;
