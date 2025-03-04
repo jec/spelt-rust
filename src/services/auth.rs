@@ -6,6 +6,7 @@ use crate::store;
 use actix_web::web;
 use surrealdb::engine::any::Any;
 use surrealdb::{RecordId, Surreal};
+use crate::config::Config;
 
 /// Possible results of calling [`log_in()`]
 pub enum LoginResult {
@@ -13,6 +14,11 @@ pub enum LoginResult {
     CredentialsInvalid,
     NotSupported,
     BadRequest,
+}
+
+/// Returns the fully qualified Matrix ID (MXID) as in `@name:domain`
+pub fn mxid(username: &String, config: &Config) -> String {
+    format!("@{}:{}", username, config.server.homeserver_name)
 }
 
 /// Authenticates a user and, if successful, returns a `LoginResult` with a token

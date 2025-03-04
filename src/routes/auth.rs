@@ -74,16 +74,19 @@ async fn login_types() -> HttpResponse {
 #[post("/_matrix/client/v3/login")]
 async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState>) -> impl Responder {
     let db = &data.db;
-    let homeserver = data.config.server.base_url.clone();
+    let homeserver = data.config.server.homeserver_name.clone();
 
     match services::auth::log_in(login_request, db).await {
-        Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms }) =>
+        Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms }) => {
+            let mxid = services::auth::mxid(&username, &data.config);
+
             HttpResponse::Ok().json(LoginSuccess {
                 access_token,
                 device_id,
-                user_id: format!("@{}:{}", username, homeserver),
+                user_id: mxid,
                 expires_in_ms
-            }),
+            })
+        },
         Ok(LoginResult::BadRequest) => {
             HttpResponse::BadRequest().json(ErrorResponse {
                 errcode: String::from("M_UNKNOWN"),

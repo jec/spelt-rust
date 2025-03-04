@@ -19,7 +19,7 @@ impl Config {
 
         Config {
             server: ServerConfig {
-                base_url: format!("https://{}/", rng.gen::<Domain>().to_string()),
+                homeserver_name: rng.gen::<Domain>().to_string(),
                 identity_server: format!("https://id.{}/", rng.gen::<Domain>().to_string()),
                 bind_address: String::from("localhost"),
                 port: rng.gen_range(1024..=65535),
@@ -51,7 +51,7 @@ impl Config {
 #[config]
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct ServerConfig {
-    pub base_url: String,
+    pub homeserver_name: String,
     pub identity_server: String,
     pub bind_address: String,
     pub port: u16,

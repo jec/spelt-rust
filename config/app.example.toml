@@ -1,7 +1,7 @@
 # Copy this file to app.toml and update values as appropriate.
 
 [server]
-base_url = "https://chat.spelt.io"
+homeserver_name = "chat.spelt.io"
 identity_server = "https://id.spelt.io"
 bind_address = "localhost"
 port = 8080

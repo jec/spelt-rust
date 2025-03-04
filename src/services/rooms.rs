@@ -29,8 +29,7 @@ pub async fn create_room(request: CreateRoomRequest, user_id: &RecordId, state: 
         return Err(Error::Auth("Authenticated user is invalid".to_string()));
     }
 
-    let base_url = state.config.server.base_url.clone();
-    let name = format!("!{}:{}", Uuid::new_v4(), base_url);
+    let name = format!("!{}:{}", Uuid::new_v4(), state.config.server.homeserver_name);
     store::rooms::create_room(&name, &db).await?;
 
     let event = CreateRoomEvent::from(request);

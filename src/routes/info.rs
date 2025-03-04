@@ -21,7 +21,8 @@ async fn versions() -> actix_web::Result<impl Responder> {
 async fn server_names(data: web::Data<AppState>) -> actix_web::Result<impl Responder> {
     let mut names: HashMap<String, String> = HashMap::new();
 
-    names.insert(String::from("m.homeserver"), data.config.server.base_url.clone());
+    let base_url = format!("https://{}", data.config.server.homeserver_name);
+    names.insert(String::from("m.homeserver"), base_url);
     names.insert(String::from("m.identity_server"), data.config.server.identity_server.clone());
 
     Ok(web::Json(names))
@@ -68,7 +69,8 @@ mod tests {
         let expected_keys: HashSet<String> = vec!["m.homeserver", "m.identity_server"].into_iter().map(|m| m.to_string()).collect();
         assert_eq!(keys, expected_keys);
 
-        assert!(result.get("m.homeserver").unwrap().eq(&conf.server.base_url));
+        let expected_homeserver = format!("https://{}", conf.server.homeserver_name);
+        assert!(result.get("m.homeserver").unwrap().eq(&expected_homeserver));
         assert!(result.get("m.identity_server").unwrap().eq(&conf.server.identity_server));
     }
 }
