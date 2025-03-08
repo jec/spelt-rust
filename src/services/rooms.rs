@@ -1,10 +1,11 @@
 use crate::error::Error;
 use crate::routes::rooms::CreateRoomRequest;
 use crate::{store, AppState};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use surrealdb::RecordId;
-use twelf::reexports::{log, serde_json};
+use twelf::reexports::log;
 use uuid::Uuid;
+use crate::models::auth::User;
 
 #[derive(Debug, Serialize)]
 pub struct CreateRoomEvent {
@@ -20,20 +21,13 @@ impl From<CreateRoomRequest> for CreateRoomEvent {
 }
 
 /// Creates a new Room and returns `Ok(room_id)`
-pub async fn create_room(request: CreateRoomRequest, user_id: &RecordId, state: &AppState) -> Result<String, Error> {
+pub async fn create_room(request: CreateRoomRequest, user: &User, state: &AppState) -> Result<String, Error> {
     let db = state.db.clone();
-    let user = store::auth::get_user_by_record_id(user_id, &db).await?;
-
-    if user.is_none() {
-        log::error!("Authenticated user with ID {} not found", user_id);
-        return Err(Error::Auth("Authenticated user is invalid".to_string()));
-    }
-
-    let name = format!("!{}:{}", Uuid::new_v4(), state.config.server.homeserver_name);
-    store::rooms::create_room(&name, &db).await?;
-
+    let room_id = format!("!{}:{}", Uuid::new_v4(), state.config.server.homeserver_name);
     let event = CreateRoomEvent::from(request);
 
+    store::rooms::create_room(&room_id, &db).await?;
     store::events::create_event(&event.r#type, &event, &db).await?;
-    Ok(name)
+
+    Ok(room_id)
 }

@@ -1,4 +1,5 @@
-use crate::AppState;
+use crate::extractors::authenticated_user::AuthenticatedUser;
+use crate::{services, AppState};
 use actix_web::{post, web, HttpResponse, Responder, ResponseError};
 use serde::{Deserialize, Serialize};
 use twelf::reexports::serde_json;
@@ -6,12 +7,12 @@ use twelf::reexports::serde_json;
 #[derive(Debug, Deserialize)]
 pub struct CreateRoomRequest {
     creation_content: serde_json::Value,
-    initial_state: Option<StateEvent>,
+    initial_state: Vec<StateEvent>,
     invite: Vec<String>,
-    invite_3pid: Option<Invite3Pid>,
+    invite_3pid: Vec<Invite3Pid>,
     is_direct: Option<bool>,
     name: Option<String>,
-    // power_level_content_override: Option<String>, // TODO
+    power_level_content_override: serde_json::Value,
     preset: Option<String>,
     room_alias_name: Option<String>,
     room_version: Option<String>,
@@ -41,17 +42,16 @@ struct CreateRoomSuccess {
 
 #[post("/_matrix/client/v3/createRoom")]
 async fn create_room(
-    // auth: AuthenticatedUser,
+    auth: AuthenticatedUser,
     creation_request: web::Json<CreateRoomRequest>,
     state: web::Data<AppState>
 ) -> impl Responder {
-    // match services::rooms::create_room(creation_request.into_inner(), &auth.user.id, state.as_ref()).await {
-    //     Ok(room_id) =>
-    //         HttpResponse::Ok().json(CreateRoomSuccess { room_id }),
-    //     Err(err) =>
-    //         err.error_response(),
-    // }
-    HttpResponse::Ok().json("{}")
+    match services::rooms::create_room(creation_request.into_inner(), &auth.user, state.as_ref()).await {
+        Ok(room_id) =>
+            HttpResponse::Ok().json(CreateRoomSuccess { room_id }),
+        Err(err) =>
+            err.error_response(),
+    }
 }
 
 #[cfg(test)]

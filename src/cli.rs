@@ -37,7 +37,7 @@ pub async fn run_users_command(args: &Args, config: &Config, db: &Surreal<Any>) 
 }
 
 pub async fn list_users(db: &Surreal<Any>) -> () {
-    let mut users = store::auth::users_stream(db).await.unwrap();
+    let users = store::auth::users_stream(db).await.unwrap();
     let mut has_users = false;
 
     users.iter().for_each(|user| {

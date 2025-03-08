@@ -3,28 +3,11 @@ use crate::models::auth::{Session, User};
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{Salt, SaltString};
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use surrealdb::engine::any::Any;
 use surrealdb::{RecordId, Surreal};
+use twelf::reexports::serde_json::json;
 use uuid::Uuid;
-
-#[derive(Debug, Serialize)]
-pub struct NewUser {
-    pub name: String,
-    pub email: String,
-    pub encrypted_password: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct NewSession {
-    pub uuid: Uuid,
-    pub device_identifier: String,
-    pub device_name: Option<String>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
 
 /// Query result used by [`validate_user_and_password()`]
 #[derive(Debug, Deserialize)]
@@ -54,13 +37,13 @@ pub async fn create_user(
     let now = chrono::Utc::now();
 
     let user: Option<User> = db.create("user")
-        .content(NewUser {
-            name,
-            email,
-            encrypted_password,
-            created_at: now,
-            updated_at: now,
-        })
+        .content(json!({
+            "name": name,
+            "email": email,
+            "encrypted_password": encrypted_password,
+            "created_at": now,
+            "updated_at": now,
+        }))
         .await?;
 
     user.ok_or(Error::Db("Failed to create user".to_string()))
@@ -94,7 +77,7 @@ pub async fn validate_user_and_password(
 
     match Argon2::default().verify_password(password.as_bytes(), &hash) {
         Ok(()) => Ok(Some(row.id)),
-        Err(e) => Ok(None),
+        Err(_) => Ok(None),
     }
 }
 
@@ -230,7 +213,7 @@ pub mod tests {
     }
 
     async fn test_validate_user_and_password_impl_with_mismatch(db: Surreal<Any>) {
-        let (user, password) = create_test_user(&db).await;
+        let (user, _password) = create_test_user(&db).await;
         let not_the_password = "foobar".to_string();
         let result = validate_user_and_password(&user.name, &not_the_password, &db).await.unwrap();
         assert!(result.is_none());
@@ -254,7 +237,7 @@ pub mod tests {
     }
 
     async fn test_get_user_by_record_id_impl(db: Surreal<Any>) {
-        let (user, password) = create_test_user(&db).await;
+        let (user, _password) = create_test_user(&db).await;
         let result = get_user_by_record_id(&user.id, &db).await.unwrap();
         assert_eq!(result.unwrap().id, user.id);
     }
@@ -276,7 +259,7 @@ pub mod tests {
     }
 
     async fn test_create_session_impl(db: Surreal<Any>) {
-        let (user, password) = create_test_user(&db).await;
+        let (user, _password) = create_test_user(&db).await;
         let device_id = "foobar".to_string();
 
         let session = create_session(
@@ -295,7 +278,7 @@ pub mod tests {
     }
 
     async fn test_validate_session_impl(db: Surreal<Any>) {
-        let (user, password) = create_test_user(&db).await;
+        let (user, _password) = create_test_user(&db).await;
         let (session, _jwt) = create_test_session(&user.id, 0, &db).await;
         let (user_result, session_result) = validate_session(&session.uuid.to_string(), &db).await.unwrap();
         assert_eq!(user_result.id, user.id);
@@ -323,7 +306,7 @@ pub mod tests {
     }
 
     async fn test_invalidate_existing_sessions_impl(db: Surreal<Any>) {
-        let (user, password) = create_test_user(&db).await;
+        let (user, _password) = create_test_user(&db).await;
         let (session_1, _jwt) = create_test_session(&user.id, 0, &db).await;
         let (session_2, _jwt) = create_test_session(&user.id, 0, &db).await;
 
@@ -346,7 +329,7 @@ pub mod tests {
     }
 
     async fn test_log_out_impl(db: Surreal<Any>) {
-        let (user, password) = create_test_user(&db).await;
+        let (user, _password) = create_test_user(&db).await;
         let (session_1, _jwt) = create_test_session(&user.id, 0, &db).await;
         let (session_2, _jwt) = create_test_session(&user.id, 0, &db).await;
 
@@ -369,7 +352,7 @@ pub mod tests {
     }
 
     async fn test_log_out_all_impl(db: Surreal<Any>) {
-        let (user, password) = create_test_user(&db).await;
+        let (user, _password) = create_test_user(&db).await;
         let (session_1, _jwt) = create_test_session(&user.id, 0, &db).await;
         let (session_2, _jwt) = create_test_session(&user.id, 0, &db).await;
 

@@ -74,7 +74,6 @@ async fn login_types() -> HttpResponse {
 #[post("/_matrix/client/v3/login")]
 async fn log_in(login_request: web::Json<LoginRequest>, data: web::Data<AppState>) -> impl Responder {
     let db = &data.db;
-    let homeserver = data.config.server.homeserver_name.clone();
 
     match services::auth::log_in(login_request, db).await {
         Ok(LoginResult::LoggedIn { access_token, device_id, username, expires_in_ms }) => {

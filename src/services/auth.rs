@@ -145,6 +145,7 @@ mod tests {
     use crate::services;
     use crate::store::auth::invalidate_existing_sessions;
     use crate::store::auth::tests::{create_test_session, create_test_user};
+    use assert_matches2::assert_matches;
 
     #[test]
     fn test_validate_username() {
@@ -155,19 +156,15 @@ mod tests {
     #[test]
     fn test_validate_username_with_empty() {
         let config = Config::test();
-        assert!(match validate_username(&"".to_string(), &config) {
-            Err(msg) => msg.contains("empty"),
-            _ => false,
-        });
+        assert_matches!(validate_username(&"".to_string(), &config), Err(msg));
+        assert!(msg.contains("empty"));
     }
 
     #[test]
     fn test_validate_username_with_bad_char() {
         let config = Config::test();
-        assert!(match validate_username(&"bad*name".to_string(), &config) {
-            Err(msg) => msg.contains("disallowed characters"),
-            _ => false,
-        });
+        assert_matches!(validate_username(&"bad*name".to_string(), &config), Err(msg));
+        assert!(msg.contains("disallowed characters"));
     }
 
     async fn test_authorize_request (db: &Surreal<Any>) {
