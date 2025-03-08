@@ -2,7 +2,6 @@ use serde::Deserialize;
 use surrealdb::RecordId;
 use uuid::Uuid;
 
-
 /// Model for database `user` node
 #[derive(Clone, Debug, Deserialize)]
 pub struct User {
