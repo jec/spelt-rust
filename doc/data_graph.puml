@@ -1,0 +1,64 @@
+@startuml
+
+title Spelt Data Graph
+
+object User {
+  name
+  email
+  encryptedPassword
+}
+object ProfileItem {
+  key
+  value
+}
+object PrivateItem {
+  key
+  value
+}
+object Session {
+  uuid
+}
+object Device {
+  identifier
+  displayName
+  lastSeenIp
+  lastSeenAt
+}
+object Room {
+  identifier
+  name
+  topic
+  avatar
+  alias
+  roomVersion
+}
+object RoomState {
+  key
+  value
+}
+object RoomAlias {
+  name
+}
+object Event {
+  type
+  stateKey
+  content
+  depth
+}
+object Peer {
+  name
+}
+
+User --> Session : authed_as
+User --> Room : created
+User --> Room : member_of
+ProfileItem --> User : belongs_to
+PrivateItem --> User : belongs_to
+RoomState --> Room : state_of
+RoomAlias --> Room : for
+Session --> Device : connected_from
+Event --> Event : child_of
+Event --> Room : sent_to
+Peer --> Room : participates_in
+
+@enduml
