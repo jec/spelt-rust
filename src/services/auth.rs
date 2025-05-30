@@ -27,7 +27,7 @@ pub fn mxid(username: &String, config: &Config) -> String {
 /// Validates the `name` part of `@name:domain` according to Matrix spec
 ///
 /// See https://spec.matrix.org/v1.13/appendices/#user-identifiers
-pub fn validate_username(username: &String, config: &Config) -> Result<(), String> {
+pub fn validate_username(username: &str, config: &Config) -> Result<(), String> {
     if username.is_empty() {
         return Err("Username cannot be empty.".to_string());
     }
@@ -38,7 +38,7 @@ pub fn validate_username(username: &String, config: &Config) -> Result<(), Strin
     }
 
     let pattern = Regex::new(r"^[-a-z0-9._+=/]+$").unwrap();
-    if !pattern.is_match(&username) {
+    if !pattern.is_match(username) {
         return Err("Username contains disallowed characters.".to_string());
     }
 
@@ -87,7 +87,7 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db: &Surreal<Any>) -
 
     let user_id_opt = store::auth::validate_user_and_password(
         &username,
-        &login_request.password.as_ref().unwrap(),
+        login_request.password.as_ref().unwrap(),
         db
     ).await?;
 
@@ -122,8 +122,8 @@ pub async fn log_in(login_request: web::Json<LoginRequest>, db: &Surreal<Any>) -
 
 /// Validates the JWT signature and validates the referenced `Session`; returns
 /// `Ok(s: Session)` on success
-pub async fn authorize_request(access_token: &String, db: &Surreal<Any>) -> Result<(User, Session), Error> {
-    let claims = services::jwt::validate_jwt(&access_token)?;
+pub async fn authorize_request(access_token: &str, db: &Surreal<Any>) -> Result<(User, Session), Error> {
+    let claims = services::jwt::validate_jwt(access_token)?;
     let uuid = claims.sub;
 
     store::auth::validate_session(&uuid, db).await

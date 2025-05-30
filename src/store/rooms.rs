@@ -3,7 +3,7 @@ use surrealdb::engine::any::Any;
 use surrealdb::Surreal;
 
 pub async fn create_room(
-    name: &String,
+    name: &str,
     db: &Surreal<Any>
 ) -> Result<(), Error> {
     Ok(())

@@ -94,7 +94,6 @@ pub struct TestDatabaseConfig {
 }
 
 pub fn load(path: PathBuf) -> Result<Config, twelf::Error> {
-    let path = path.into();
     let conf = Config::with_layers(&[
         Layer::Toml(path),
     ])?;

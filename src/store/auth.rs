@@ -21,14 +21,14 @@ pub async fn users_stream(db: &Surreal<Any>) -> Result<Vec<User>, Error> {
 }
 
 pub async fn create_user(
-    name: &String,
-    email: &String,
+    name: &str,
+    email: &str,
     password: &String,
     db: &Surreal<Any>
 ) -> Result<User, Error> {
     // Why is this necessary?
-    let name = name.clone();
-    let email = email.clone();
+    let name = name.to_owned();
+    let email = email.to_owned();
 
     let salt_string = SaltString::generate(&mut OsRng);
     let salt: Salt = salt_string.as_ref().try_into().unwrap();
@@ -59,12 +59,12 @@ pub async fn get_user_by_record_id(
 /// Looks up user by `username` and validates `password`; returns `Ok(Some(user.id))`
 /// if user is found and password is valid; else returns `Ok(None)`
 pub async fn validate_user_and_password(
-    username: &String,
+    username: &str,
     password: &String,
     db: &Surreal<Any>
 ) -> Result<Option<RecordId>, Error> {
     let row_option: Option<ValidationRow> = db.query("SELECT id, encrypted_password FROM user WHERE name = $name")
-        .bind(("name", username.clone()))
+        .bind(("name", username.to_owned()))
         .await?
         .take(0)?;
 
@@ -85,7 +85,7 @@ pub async fn validate_user_and_password(
 /// success returns the session
 pub async fn create_session(
     user_id: &RecordId,
-    device_id: &String,
+    device_id: &str,
     device_name: &Option<String>,
     db: &Surreal<Any>
 ) -> Result<Session, Error> {
@@ -101,7 +101,7 @@ pub async fn create_session(
         RELATE $user -> authed_as -> $sess;
         RETURN $sess;"
     )
-        .bind(("device_id", device_id.clone()))
+        .bind(("device_id", device_id.to_owned()))
         .bind(("device_name", device_name.clone()))
         .bind(("user", user_id.clone()))
         .await?
@@ -111,7 +111,7 @@ pub async fn create_session(
 }
 
 pub async fn validate_session(
-    session_uuid: &String,
+    session_uuid: &str,
     db: &Surreal<Any>
 ) -> Result<(User, Session), Error> {
     let query = r#"
@@ -121,7 +121,7 @@ pub async fn validate_session(
     "#;
 
     let mut result = db.query(query)
-        .bind(("uuid", session_uuid.clone()))
+        .bind(("uuid", session_uuid.to_owned()))
         .await?;
 
     let user: Option<User> = result.take(1)?;
@@ -136,7 +136,7 @@ pub async fn validate_session(
 
 pub async fn invalidate_existing_sessions(
     user_id: &RecordId,
-    device_id: &String,
+    device_id: &str,
     db: &Surreal<Any>
 ) -> Result<(), Error> {
     let query = r#"
@@ -147,7 +147,7 @@ pub async fn invalidate_existing_sessions(
 
     let _result = db.query(query)
         .bind(("user_id", user_id.clone()))
-        .bind(("device_id", device_id.clone()))
+        .bind(("device_id", device_id.to_owned()))
         .await?;
 
     Ok(())
@@ -371,8 +371,8 @@ pub mod tests {
     /// Helper function that creates a User for testing; returns a tuple of
     /// `User` and the `String` password
     pub async fn create_test_user(db: &Surreal<Any>) -> (User, String) {
-        let username = Username().fake();
-        let email = SafeEmail().fake();
+        let username: String = Username().fake();
+        let email: String = SafeEmail().fake();
         let password = uuid::Uuid::new_v4().to_string();
         let user = create_user(&username, &email, &password, db).await.unwrap();
 

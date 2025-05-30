@@ -4,7 +4,7 @@ use surrealdb::engine::any::Any;
 use surrealdb::Surreal;
 
 pub async fn create_event(
-    kind: &String,
+    kind: &str,
     event: &CreateRoomEvent,
     db: &Surreal<Any>
 ) -> Result<String, Error> {

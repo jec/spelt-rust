@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use actix_web::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::middleware::{from_fn, Logger, Next};

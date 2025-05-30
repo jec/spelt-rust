@@ -39,7 +39,7 @@ pub fn canonicalize_json() {
     });
     println!("{:?}", values2);
     values2.sort_all_objects();
-    println!("{}", values2.to_string());
+    println!("{}", values2);
 }
 
 pub fn strip_event() {

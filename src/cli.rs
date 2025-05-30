@@ -21,7 +21,7 @@ pub fn parse() -> Args {
 
 pub async fn run_command(args: &Args, config: &Config, db: &Surreal<Any>) {
     match &args.command {
-        Some(s) if s == "users" => run_users_command(&args, config, db).await,
+        Some(s) if s == "users" => run_users_command(args, config, db).await,
         Some(s) => eprintln!("Invalid command: {}", s),
         None => (),
     }
@@ -36,7 +36,7 @@ pub async fn run_users_command(args: &Args, config: &Config, db: &Surreal<Any>) 
     }
 }
 
-pub async fn list_users(db: &Surreal<Any>) -> () {
+pub async fn list_users(db: &Surreal<Any>) {
     let users = store::auth::users_stream(db).await.unwrap();
     let mut has_users = false;
 
@@ -52,8 +52,6 @@ pub async fn list_users(db: &Surreal<Any>) -> () {
     if !has_users {
         println!("No users found.");
     }
-
-    ()
 }
 
 pub async fn create_user(args: &Args, config: &Config, db: &Surreal<Any>) {
@@ -62,7 +60,7 @@ pub async fn create_user(args: &Args, config: &Config, db: &Surreal<Any>) {
         std::process::exit(1);
     }
 
-    let username = args.args.get(0).unwrap().trim().to_lowercase();
+    let username = args.args.first().unwrap().trim().to_lowercase();
     let email = args.args.get(1).unwrap().trim().to_lowercase();
 
     if let Err(msg) = services::auth::validate_username(&username, config) {
@@ -93,7 +91,7 @@ pub async fn create_user(args: &Args, config: &Config, db: &Surreal<Any>) {
         &username,
         &email,
         &password0,
-        &db
+        db
     ).await {
         Ok(_) => println!("User created."),
         Err(e) => eprintln!("Error creating user: {}", e),

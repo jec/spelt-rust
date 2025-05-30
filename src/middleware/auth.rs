@@ -32,7 +32,7 @@ pub async fn authenticator(req: ServiceRequest, next: Next<impl MessageBody>) ->
 
                 if let Some(state) = req.app_data::<Data<AppState>>() {
                     let db = state.db.clone();
-                    match services::auth::authorize_request(&token.to_string(), &db).await {
+                    match services::auth::authorize_request(token, &db).await {
                         Ok((user, session)) => {
                             log::info!(
                                 "Authenticated {} with {} on device {}",
@@ -46,7 +46,7 @@ pub async fn authenticator(req: ServiceRequest, next: Next<impl MessageBody>) ->
                             extensions.insert(session);
                         },
                         Err(err) =>
-                            log::info!("{}", err.to_string()),
+                            log::info!("{}", err),
                     }
                 }
             }

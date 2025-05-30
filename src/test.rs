@@ -11,5 +11,4 @@ where
     let db = any::connect("mem://").await.unwrap();
     db.use_ns("spelt").use_db("test").await.unwrap();
     f(db).await;
-    ()
 }

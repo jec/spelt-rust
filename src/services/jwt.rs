@@ -32,10 +32,10 @@ pub fn create_jwt(session_uuid: &String, now_offset: i64) -> Result<String, Erro
     )?)
 }
 
-pub fn validate_jwt(jwt: &String) -> Result<JwtClaims, Error> {
+pub fn validate_jwt(jwt: &str) -> Result<JwtClaims, Error> {
     Ok(
         decode::<JwtClaims>(
-            &jwt,
+            jwt,
             &DecodingKey::from_rsa_pem(include_bytes!("../../config/public.pem")).unwrap(),
             &Validation::new(Algorithm::RS256)
         )?
