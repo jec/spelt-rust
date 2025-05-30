@@ -176,9 +176,8 @@ pub mod tests {
     use super::*;
     use crate::models::auth::{Session, User};
     use crate::services;
-    use faker_rand::en_us::internet::Domain;
-    use faker_rand::en_us::names::FirstName;
-    use rand::Rng;
+    use fake::faker::internet::en::{SafeEmail, Username};
+    use fake::Fake;
     use surrealdb::engine::any::Any;
 
     #[tokio::test]
@@ -372,9 +371,8 @@ pub mod tests {
     /// Helper function that creates a User for testing; returns a tuple of
     /// `User` and the `String` password
     pub async fn create_test_user(db: &Surreal<Any>) -> (User, String) {
-        let mut rng = rand::thread_rng();
-        let username = rng.gen::<FirstName>().to_string().to_lowercase();
-        let email = format!("{}@{}", rng.gen::<FirstName>().to_string(), rng.gen::<Domain>().to_string()).to_lowercase();
+        let username = Username().fake();
+        let email = SafeEmail().fake();
         let password = uuid::Uuid::new_v4().to_string();
         let user = create_user(&username, &email, &password, db).await.unwrap();
 

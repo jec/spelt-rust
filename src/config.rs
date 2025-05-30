@@ -1,5 +1,7 @@
-use faker_rand::en_us::internet::Domain;
-use faker_rand::en_us::names::FirstName;
+use fake::faker::internet::en::{DomainSuffix, Password, Username};
+use fake::faker::lorem::en::Word;
+use fake::faker::name::en::FirstName;
+use fake::Fake;
 use rand::Rng;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -15,33 +17,33 @@ pub struct Config {
 
 impl Config {
     pub fn test() -> Self {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         Config {
             server: ServerConfig {
-                homeserver_name: rng.gen::<Domain>().to_string(),
-                identity_server: format!("https://id.{}/", rng.gen::<Domain>().to_string()),
+                homeserver_name: format!("{}.{}", Word().fake::<String>(), DomainSuffix().fake::<String>()),
+                identity_server: format!("https://id.{}.{}/", Word().fake::<String>(), DomainSuffix().fake::<String>()),
                 bind_address: String::from("localhost"),
-                port: rng.gen_range(1024..=65535),
+                port: rng.random_range(1024..=65535),
             },
             jwt: JwtConfig {
-                issuer: format!("https://{}/base", rng.gen::<Domain>().to_string()),
+                issuer: format!("https://{}.{}/base", Word().fake::<String>(), DomainSuffix().fake::<String>()),
             },
             database: DatabaseConfig {
                 dev: DevDatabaseConfig {
-                    hostname: format!("{}.{}", rng.gen::<FirstName>().to_string(), rng.gen::<Domain>().to_string()),
-                    port: rng.gen_range(1024..=65535),
-                    username: rng.gen::<FirstName>().to_string(),
-                    password: rng.gen::<FirstName>().to_string(),
-                    namespace: rng.gen::<FirstName>().to_string(),
-                    database_name: rng.gen::<FirstName>().to_string(),
+                    hostname: format!("{}.{}.{}", FirstName().fake::<String>(), Word().fake::<String>(), DomainSuffix().fake::<String>()),
+                    port: rng.random_range(1024..=65535),
+                    username: Username().fake(),
+                    password: Password(8..20).fake(),
+                    namespace: Word().fake(),
+                    database_name: Word().fake(),
                 },
                 test: TestDatabaseConfig {
-                    hostname: format!("{}.{}", rng.gen::<FirstName>().to_string(), rng.gen::<Domain>().to_string()),
-                    port: rng.gen_range(1024..=65535),
-                    username: rng.gen::<FirstName>().to_string(),
-                    password: rng.gen::<FirstName>().to_string(),
-                    namespace: rng.gen::<FirstName>().to_string(),
+                    hostname: format!("{}.{}.{}", FirstName().fake::<String>(), Word().fake::<String>(), DomainSuffix().fake::<String>()),
+                    port: rng.random_range(1024..=65535),
+                    username: Username().fake(),
+                    password: Password(8..20).fake(),
+                    namespace: Word().fake(),
                 }
             },
         }
